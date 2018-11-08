@@ -1,0 +1,1 @@
+use Cro::LDAP::Request::Bind;

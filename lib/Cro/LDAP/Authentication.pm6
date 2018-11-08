@@ -1,0 +1,1 @@
+our enum Cro::LDAP::Authentication is export <Simple SASL>;

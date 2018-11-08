@@ -1,0 +1,29 @@
+{
+    "license": "Artistic-2.0",
+    "source-url": "https://github.com/croservices/cro-ldap.git",
+    "depends": ["Cro::Core"],
+    "provides": {
+        "Cro::LDAP::Request::Bind": "lib/Cro/LDAP/Request/Bind.pm6",
+        "Cro::LDAP::Client": "lib/Cro/LDAP/Client.pm6",
+        "Cro::LDAP::RequestSerializer": "lib/Cro/LDAP/RequestSerializer.pm6",
+        "Cro::LDAP::LDAPDN": "lib/Cro/LDAP/LDAPDN.pm6",
+        "Cro::LDAP::Result": "lib/Cro/LDAP/Result.pm6",
+        "Cro::LDAP::Authentication": "lib/Cro/LDAP/Authentication.pm6",
+        "Cro::LDAP::Request": "lib/Cro/LDAP/Request.pm6",
+        "Cro::LDAP::Message": "lib/Cro/LDAP/Message.pm6",
+        "Cro::LDAP::Response::Bind": "lib/Cro/LDAP/Response/Bind.pm6",
+        "Cro::LDAP::Response": "lib/Cro/LDAP/Response.pm6",
+        "Cro::LDAP::ProtocolOp": "lib/Cro/LDAP/ProtocolOp.pm6"
+    },
+    "name": "Cro::LDAP",
+    "description": "LDAP support",
+    "resources": [],
+    "perl": "6.*",
+    "version": "0.1",
+    "tags": [
+        "LDAP",
+        "Client",
+        "Server"
+    ],
+    "authors": ["Alexander Kiryuhin <alexander.kiryuhin@gmail.com>"]
+}
