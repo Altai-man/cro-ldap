@@ -10,6 +10,7 @@
         "Cro::LDAP::Result": "lib/Cro/LDAP/Result.pm6",
         "Cro::LDAP::Authentication": "lib/Cro/LDAP/Authentication.pm6",
         "Cro::LDAP::Request": "lib/Cro/LDAP/Request.pm6",
+        "Cro::LDAP::ResponseParser": "lib/Cro/LDAP/ResponseParser.pm6",
         "Cro::LDAP::Message": "lib/Cro/LDAP/Message.pm6",
         "Cro::LDAP::Response::Bind": "lib/Cro/LDAP/Response/Bind.pm6",
         "Cro::LDAP::Response": "lib/Cro/LDAP/Response.pm6",

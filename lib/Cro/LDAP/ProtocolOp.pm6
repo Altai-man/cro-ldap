@@ -1,2 +1,4 @@
+use Cro::Message;
+
 # Marker role for all operations
-role Cro::LDAP::ProtocolOp {}
+role Cro::LDAP::ProtocolOp does Cro::Message {}

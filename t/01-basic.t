@@ -1,21 +1,19 @@
-use Test;
 use Cro::LDAP::Client;
+use Cro::LDAP::Request;
+use Cro::LDAP::Response;
+use Test;
+
+plan *;
+
+my $promise = Promise.new;
 
 class MockLDAP {
     method start() {
         start react {
-            whenever IO::Socket::Async.listen('0.0.0.0', 3434) -> IO::Handle $conn {
-                whenever $conn.Supply.lines -> $line {
-                    $conn.write(Buf.new(1, 1, 1));
+            whenever IO::Socket::Async.listen('localhost', 20000) -> IO::Socket::Async $conn {
+                whenever $conn.Supply(:bin) {
+                    $conn.write(Buf.new(1, 2, 3));
                     $conn.close;
-                    my $done = True;
-                    done;
-                    Promise.in(5).then: {
-                        unless $done {
-                            die 'Foo!';
-                        }
-
-                    }
                 }
             }
             CATCH {
@@ -31,10 +29,14 @@ MockLDAP.start;
 
 my $client = Cro::LDAP::Client.new;
 
-$client.connect('0.0.0.0', 3434);
+sleep 1;
+
+await $client.connect('localhost', 20000);
 # "Foo" name, simple authentication used
 given $client.bind("Foo") -> $resp {
-    say $resp;
+    ok $resp ~~ Cro::LDAP::Response::Bind, 'Got Response::Bind object';
 }
+
+await $promise;
 
 done-testing;

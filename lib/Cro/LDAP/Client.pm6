@@ -2,15 +2,15 @@ use Cro;
 use Cro::TCP;
 use Cro::LDAP::Request;
 use Cro::LDAP::RequestSerializer;
+use Cro::LDAP::ResponseParser;
 
 class Cro::LDAP::Client {
     has IO::Socket::Async $!socket;
-    has $!pipeline;
 
     my class Pipeline {
         has Supplier $!in;
         has Tap $!tap;
-        has Promise $!next-response-vow;
+        has $!next-response-vow;
 
         submethod BUILD(:$!in, :$out!) {
             $!tap = supply {
@@ -19,10 +19,10 @@ class Cro::LDAP::Client {
                     $!next-response-vow = Nil;
                     $vow.keep($_);
                 }
-            }
+            }.tap;
         }
 
-        method send-request($request --> Promise) {
+        method send-request(Cro::LDAP::Request $request) {
             my $next-response-promise = Promise.new;
             $!next-response-vow = $next-response-promise.vow;
             $!in.emit($request);
@@ -30,7 +30,9 @@ class Cro::LDAP::Client {
         }
     }
 
-    method !get-pipeline($host, $port) {
+    has Pipeline $!pipeline;
+
+    method !get-pipeline(:$host, :$port) {
         my @parts;
         push @parts, Cro::LDAP::RequestSerializer;
         push @parts, Cro::TCP::Connector;
@@ -38,19 +40,17 @@ class Cro::LDAP::Client {
         my $connector = Cro.compose(|@parts);
         my $in = Supplier::Preserving.new;
         my $out = $connector.establish($in.Supply, :$host, :$port);
-        Pipeline.new(:$in);
+        Pipeline.new(:$in, :$out);
     }
 
     method connect(Str $host, Int $port) {
         IO::Socket::Async.connect($host, $port).then(-> $promise {
-            await $promise;
-            $!socket = $promise;
-
+            $!socket = $promise.result;
             $!pipeline = self!get-pipeline(:$host, :$port);
 
-            say "Promise is done!";
             CATCH {
                 default {
+                    .note;
                     say "Promise is broken!";
                 }
             }
@@ -58,6 +58,10 @@ class Cro::LDAP::Client {
     }
 
     method bind(Str $name, :$simple, :$sasl) {
-        Cro::LDAP::Rquest::Bind.new;
+        Promise(supply {
+            whenever $!pipeline.send-request(Cro::LDAP::Request::Bind.new) {
+                emit $_;
+            }
+        });
     }
 }
