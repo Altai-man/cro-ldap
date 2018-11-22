@@ -1,1 +1,6 @@
-our enum Cro::LDAP::Authentication is export <Simple SASL>;
+use ASN::BER;
+
+class Cro::LDAP::Authentication::SaslCredentials {
+    has $.mechanism;
+    has $.credentials;
+}

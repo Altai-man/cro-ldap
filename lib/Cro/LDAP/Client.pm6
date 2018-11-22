@@ -3,6 +3,7 @@ use Cro::TCP;
 use Cro::LDAP::Request;
 use Cro::LDAP::RequestSerializer;
 use Cro::LDAP::ResponseParser;
+use Cro::LDAP::Authentication;
 
 class Cro::LDAP::Client {
     has IO::Socket::Async $!socket;
@@ -59,7 +60,12 @@ class Cro::LDAP::Client {
 
     method bind(Str $name, :$simple, :$sasl) {
         Promise(supply {
-            whenever $!pipeline.send-request(Cro::LDAP::Request::Bind.new) {
+            my $bind-req = do Cro::LDAP::Request::Bind.new(
+                    message-id => 1,
+                    version => 3,
+                    name => $name,
+                    authentication => Simple);
+            whenever $!pipeline.send-request($bind-req) {
                 emit $_;
             }
         });

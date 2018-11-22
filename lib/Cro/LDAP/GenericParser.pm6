@@ -33,12 +33,15 @@ class Cro::LDAP::GenericParser {
 
             whenever $in -> Cro::TCP::Message $packet {
                 my Blob $data = $packet.data;
+
+                say $data;
+
                 loop {
                     $_ = $expecting;
                     when Type {
                         # Sequence code
                         my $type = $data[0];
-                        unless $type == 30 {
+                        unless $type == 0x30 {
                             die 'Malformed message envelope';
                         }
                         $data = $data.subbuf(1);

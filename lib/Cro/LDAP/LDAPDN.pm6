@@ -1,4 +1,6 @@
-subset Cro::LDAP::LDAPDN of Str;
+use ASN::Types;
+
+class Cro::LDAP::LDAPDN is ASN::OctetString {}
 
 class AttributeTypeAndValue {
     has Str $.type;
