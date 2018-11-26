@@ -1,9 +1,14 @@
-use Cro::LDAP::ProtocolOp;
+use ASN::BER;
+use ASN::Types;
+use Cro::LDAP::Request;
+use Cro::LDAP::Response;
 
-class Cro::LDAP::Message {
-    subset MaxInt of Int where 0 < * < 2 ** 21 - 1;
-    has MaxInt $.message-id;
+class Cro::LDAP::Message does ASNType {
+    has Int $.message-id is required;
+    has $.protocol-op is choice-of(
+            bindRequest => Cro::LDAP::Request::Bind,
+    );
+    has Control @.controls is optional is tagged(0);
 
-    has Cro::LDAP::ProtocolOp $.protocol-op;
-    has $.controls;
+    method ASN-order { <$!message-id $!protocol-op @!controls> }
 }

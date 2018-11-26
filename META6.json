@@ -18,7 +18,6 @@
         "Cro::LDAP::ResponseSerializer": "lib/Cro/LDAP/ResponseSerializer.pm6",
         "Cro::LDAP::ResponseParser": "lib/Cro/LDAP/ResponseParser.pm6",
         "Cro::LDAP::Response::Bind": "lib/Cro/LDAP/Response/Bind.pm6",
-        "Cro::LDAP::ProtocolOp": "lib/Cro/LDAP/ProtocolOp.pm6",
         "Cro::LDAP::Server": "lib/Cro/LDAP/Server.pm6"
     },
     "name": "Cro::LDAP",

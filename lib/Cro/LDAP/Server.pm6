@@ -11,7 +11,7 @@ class Cro::LDAP::Server does Cro::Service {
     my class LDAPTransformer does Cro::Transform {
         has Cro::LDAP::Worker $.server is required;
 
-        method consumes() { Cro::LDAP::Request  }
+        method consumes() { Cro::LDAP::Message  }
         method produces() { Cro::LDAP::Response }
 
         method transformer($request-stream) {

@@ -23,7 +23,7 @@ class Cro::LDAP::Client {
             }.tap;
         }
 
-        method send-request(Cro::LDAP::Request $request) {
+        method send-request(Cro::LDAP::Message $request) {
             my $next-response-promise = Promise.new;
             $!next-response-vow = $next-response-promise.vow;
             $!in.emit($request);
