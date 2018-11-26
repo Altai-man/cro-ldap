@@ -27,7 +27,7 @@ class Cro::LDAP::Request::Bind does ASNType {
     has Int $.version is required;
     has Cro::LDAP::LDAPDN $.name is required;
     has $.authentication is choice-of(
-            simple => (0 => Str),
+            simple => (0 => ASN::OctetString),
             sasl   => (3 => Cro::LDAP::Authentication::SaslCredentials)) is required;
 
     method ASN-order { <$!version $!name $!authentication> }
