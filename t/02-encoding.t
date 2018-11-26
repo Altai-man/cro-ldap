@@ -18,7 +18,7 @@ my $bind-request = Cro::LDAP::Request.new(
                 authentication => simple => ASN::OctetString.new("466F6F"))
         );
 
-is-deeply $bind-request.serialize(:debug), $bind-request-ber, "Bind request is serialized";
+is-deeply $bind-request.serialize, $bind-request-ber, "Bind request is serialized";
 
 # On implicit tagging
 # * If inside of CHOICE and implicit tag is defined, use it with context-specific bit.

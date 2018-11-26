@@ -1,9 +1,16 @@
 use Cro::LDAP::LDAPDN;
 use Cro::LDAP::Authentication;
 use Cro::LDAP::ProtocolOp;
-use Cro::LDAP::LDAPDN;
 use ASN::BER;
 use ASN::Types;
+
+class Control does ASNType {
+    has Cro::LDAP::LDAPDN $.control-type;
+    has Bool $.criticality is default-value(False);
+    has ASN::OctetString $.control-value is optional;
+
+    method ASN-order { <$!control-type $!criticality $!control-value> }
+}
 
 class Cro::LDAP::Request::Bind {...}
 
@@ -11,9 +18,9 @@ class Cro::LDAP::Request does ASNType does Cro::LDAP::ProtocolOp {
     has $.protocol-op is choice-of(
             bindRequest => Cro::LDAP::Request::Bind,
     );
+    has Control @.controls is optional is tagged(0);
 
-    # FIXME [0] Controls are missing
-    method ASN-order { <$!message-id $!protocol-op> }
+    method ASN-order { <$!message-id $!protocol-op @!controls> }
 }
 
 class Cro::LDAP::Request::Bind does ASNType {
