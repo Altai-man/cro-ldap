@@ -4,6 +4,8 @@ class Cro::LDAP::LDAPDN is ASN::OctetString {}
 
 class Cro::LDAP::LDAPOID is ASN::OctetString {}
 
+class Cro::LDAP::LDAPURL is ASN::OctetString {}
+
 class AttributeTypeAndValue {
     has Str $.type;
     has Str $.value;

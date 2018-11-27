@@ -7,6 +7,7 @@ class Cro::LDAP::Message does ASNType {
     has Int $.message-id is required;
     has $.protocol-op is choice-of(
             bindRequest => Cro::LDAP::Request::Bind,
+            bindResponse => Cro::LDAP::Response::Bind
     );
     has Control @.controls is optional is tagged(0);
 
