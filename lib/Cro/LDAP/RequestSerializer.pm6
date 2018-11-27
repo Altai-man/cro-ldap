@@ -1,5 +1,5 @@
 use Cro::TCP;
-use Cro::LDAP::Request;
+use Cro::LDAP::Message;
 use Cro::Transform;
 
 class Cro::LDAP::RequestSerializer does Cro::Transform {
@@ -8,7 +8,7 @@ class Cro::LDAP::RequestSerializer does Cro::Transform {
 
     method transformer(Supply $request-stream) {
         supply {
-            whenever $request-stream -> Cro::LDAP::Message $request {
+            whenever $request-stream -> $request {
                 emit Cro::TCP::Message.new(data => $request.serialize);
             }
         }

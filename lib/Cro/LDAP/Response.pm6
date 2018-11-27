@@ -7,7 +7,9 @@ enum ResultCode is export (
         :operationsError(1)
 );
 
-class Cro::LDAP::Response::Bind does ASNType {
+role Cro::LDAP::Response {}
+
+class Cro::LDAP::Response::Bind does Cro::LDAP::Response does ASNType {
     has ResultCode $.result-code;
     has Cro::LDAP::LDAPDN $.matched-dn;
     has ASN::OctetString $.error-message;

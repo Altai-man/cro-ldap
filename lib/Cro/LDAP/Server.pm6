@@ -12,12 +12,12 @@ class Cro::LDAP::Server does Cro::Service {
         has Cro::LDAP::Worker $.server is required;
 
         method consumes() { Cro::LDAP::Message  }
-        method produces() { Cro::LDAP::Response }
+        method produces() { Cro::LDAP::Message }
 
         method transformer($request-stream) {
             supply {
                 whenever $request-stream -> $request {
-                    $!server.accept($request);
+                    emit $!server.accept($request);
                 }
             }
         }
@@ -31,7 +31,7 @@ class Cro::LDAP::Server does Cro::Service {
                 $listener,
                 Cro::LDAP::RequestParser,
                 $transformer,
-                Cro::LDAP::ResponseSerializer);
+                Cro::LDAP::ResponseSerializer.new);
 
     }
 }

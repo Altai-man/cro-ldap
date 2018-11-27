@@ -7,8 +7,6 @@ use Test;
 
 plan *;
 
-my $promise = Promise.new;
-
 my Cro::Service $server = Cro::LDAP::Server.new(
         server => MockLDAPWorker.new,
         :host('localhost'),
@@ -20,14 +18,10 @@ QUIT {
 
 my $client = Cro::LDAP::Client.new;
 
-sleep 1;
-
 await $client.connect('localhost', 20000);
 # "Foo" name, simple authentication used
-given $client.bind("Foo") -> $resp {
+given await $client.bind("Foo") -> $resp {
     ok $resp ~~ Cro::LDAP::Response::Bind, 'Got Response::Bind object';
 }
-
-await $promise;
 
 done-testing;

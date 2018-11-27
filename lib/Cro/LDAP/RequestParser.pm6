@@ -1,5 +1,5 @@
 use Cro::Transform;
-use Cro::LDAP::Request;
+use Cro::LDAP::Message;
 use Cro::LDAP::GenericParser;
 use Cro::TCP;
 

@@ -1,9 +1,10 @@
 use ASN::BER;
 use ASN::Types;
+use Cro;
 use Cro::LDAP::Request;
 use Cro::LDAP::Response;
 
-class Cro::LDAP::Message does ASNType {
+class Cro::LDAP::Message does ASNType does Cro::Message {
     has Int $.message-id is required;
     has $.protocol-op is choice-of(
             bindRequest => Cro::LDAP::Request::Bind,

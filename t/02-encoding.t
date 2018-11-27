@@ -16,21 +16,6 @@ use Test;
 #    }
 #}
 
-#Encoding to the file 'data.ber' using BER encoding rule...
-#LDAPMessage SEQUENCE: tag = [UNIVERSAL 16] constructed; length = 32
-#  messageID MessageID INTEGER: tag = [UNIVERSAL 2] primitive; length = 1
-#    1
-#  protocolOp CHOICE
-#    bindRequest BindRequest SEQUENCE: tag = [APPLICATION 0] constructed; length = 27
-#      version INTEGER: tag = [UNIVERSAL 2] primitive; length = 1
-#        3
-#      name LDAPDN OCTET STRING: tag = [UNIVERSAL 4] primitive; length = 17
-#        0x64643d6578616d706c652c64633d636f6d
-#      authentication AuthenticationChoice CHOICE
-#        simple OCTET STRING: tag = [0] primitive; length = 3
-#          0x46466f
-#Encoded successfully in 34 bytes:
-
 my $bind-request-ber = Blob.new(
         0x30, 0x20, 0x02, 0x01, 0x01, 0x60, 0x1B, 0x02, 0x01, 0x03, 0x04,
         0x11, 0x64, 0x64, 0x3D, 0x65, 0x78, 0x61, 0x6D, 0x70, 0x6C, 0x65,
