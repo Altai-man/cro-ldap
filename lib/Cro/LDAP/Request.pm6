@@ -21,3 +21,7 @@ class Cro::LDAP::Request::Bind does ASNType {
     method ASN-order { <$!version $!name $!authentication> }
     method ASN-tag-value { 0 } # [APPLICATION 0]
 }
+
+class Cro::LDAP::Request::Unbind is ASN-Null {
+    method ASN-tag-value { 2 }
+}
