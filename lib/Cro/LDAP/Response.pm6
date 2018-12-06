@@ -1,4 +1,3 @@
-use ASN::BER;
 use ASN::Types;
 use Cro::LDAP::LDAPDN;
 

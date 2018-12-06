@@ -11,16 +11,10 @@ class Control does ASNSequence {
 }
 
 class AuthChoice does ASNChoice {
-    has $.value;
-
-    method new($value) { self.bless(:$value) }
-
     method ASN-choice {
         { simple => (0 => ASN::Types::OctetString),
           sasl   => (3 => Cro::LDAP::Authentication::SaslCredentials) }
     }
-
-    method ASN-value { $!value }
 }
 
 class Cro::LDAP::Request::Bind does ASNSequence {
@@ -49,17 +43,11 @@ class AttributeValueAssertion does ASNSequence {
 class Filter {...}
 
 class Filter does ASNChoice {
-    has $.value;
-
-    method new($value) { self.bless(:$value) }
-
     method ASN-choice {
         { and => (0 => Set),
           not => (2 => Filter),
           equalityMatch => (3 => AttributeValueAssertion) }
     }
-
-    method ASN-value { $!value }
 }
 
 class Cro::LDAP::Request::Search does ASNSequence {
