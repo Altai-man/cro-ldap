@@ -31,7 +31,7 @@ my $request-with-controls-ber = Blob.new(
 
 my $request-with-controls = Cro::LDAP::Message.new(
         message-id => 5,
-        protocol-op => ProtocolChoice.new(Pair.new("abandonRequest", Cro::LDAP::Request::Abandon.new(7))),
+        protocol-op => ProtocolChoice.new((abandonRequest => Cro::LDAP::Request::Abandon.new(7))),
         controls => (Control.new(control-type => "466F6F", criticality => True),
                      Control.new(control-type => "426172", control-value => "4C6F737420496E2054696D65"))
         );
@@ -59,10 +59,10 @@ my $bind-request-ber = Blob.new(
 
 my $bind-request = Cro::LDAP::Message.new(
         message-id => 1,
-        protocol-op => ProtocolChoice.new(Pair.new('bindRequest', Cro::LDAP::Request::Bind.new(
+        protocol-op => ProtocolChoice.new(('bindRequest' => Cro::LDAP::Request::Bind.new(
         version => 3,
                 name =>"64643D6578616D706C652C64633D636F6D",
-                authentication => AuthChoice.new(Pair.new("simple", ASN::Types::OctetString.new("466F6F"))))
+                authentication => AuthChoice.new((simple => ASN::Types::OctetString.new("466F6F"))))
                 )));
 
 is-deeply ASN::Serializer.serialize($bind-request, :mode(Implicit)), $bind-request-ber, "Bind request is serialized";
@@ -82,7 +82,7 @@ is-deeply $parser.parse($bind-request-ber), $bind-request, "Bind request is pars
 
 my $bind-response = Cro::LDAP::Message.new(
         message-id => 2,
-        protocol-op => ProtocolChoice.new(Pair.new("bindResponse", Cro::LDAP::Response::Bind.new(
+        protocol-op => ProtocolChoice.new((bindResponse => Cro::LDAP::Response::Bind.new(
             result-code => success,
             matched-dn => "",
             error-message => "")
@@ -104,7 +104,7 @@ is-deeply $parser.parse($bind-response-ber), $bind-response, "Bind response is p
 
 my $unbind-request = Cro::LDAP::Message.new(
         message-id => 5,
-        protocol-op => ProtocolChoice.new(Pair.new("unbindRequest", Cro::LDAP::Request::Unbind.new)));
+        protocol-op => ProtocolChoice.new((unbindRequest => Cro::LDAP::Request::Unbind.new)));
 
 my $unbind-request-ber = Blob.new(0x30, 0x05, 0x02, 0x01, 0x05, 0x42, 0x00);
 
@@ -133,21 +133,20 @@ is-deeply $parser.parse($unbind-request-ber), $unbind-request, "Unbind request i
 
 my $search-request = Cro::LDAP::Message.new(
         message-id => 5,
-        protocol-op => ProtocolChoice.new(Pair.new("searchRequest", Cro::LDAP::Request::Search.new(
+        protocol-op => ProtocolChoice.new((searchRequest => Cro::LDAP::Request::Search.new(
         base-object => "64633D6578616D706C652C64633D636F6D",
         scope => WholeSubtree,
         deref-aliases => NeverDerefAliases,
         size-limit => 0,
         time-limit => 0,
         types-only => False,
-        filter => Filter.new(
-            Pair.new('equalityMatch',
-                    AttributeValueAssertion.new(
-                            attribute-desc  => "6F626A656374436C617373",
-                            assertion-value => "6F7267616E697A6174696F6E616C506572736F6E")
+        filter => Filter.new((equalityMatch =>
+                AttributeValueAssertion.new(
+                        attribute-desc  => "6F626A656374436C617373",
+                        assertion-value => "6F7267616E697A6174696F6E616C506572736F6E")
         )),
         attributes => ("646E", "636E")
-        ))));
+                ))));
 
 my $search-request-ber = Blob.new(
         0x30, 0x56, 0x02, 0x01, 0x05, 0x63, 0x51, 0x04, 0x11, 0x64, 0x63, 0x3D, 0x65, 0x78, 0x61,
@@ -170,7 +169,7 @@ is-deeply $parser.parse($search-request-ber), $search-request, "Search request i
 
 my $abandon-request = Cro::LDAP::Message.new(
         message-id => 5,
-        protocol-op => ProtocolChoice.new(Pair.new("abandonRequest", Cro::LDAP::Request::Abandon.new(7)))
+        protocol-op => ProtocolChoice.new((abandonRequest => Cro::LDAP::Request::Abandon.new(7)))
         );
 
 my $abandon-request-ber = Blob.new(0x30, 0x06, 0x02, 0x01, 0x05, 0x50, 0x01, 0x07);
