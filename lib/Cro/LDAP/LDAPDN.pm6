@@ -1,10 +1,10 @@
 use ASN::Types;
 
-class Cro::LDAP::LDAPDN is ASN::OctetString {}
-
-class Cro::LDAP::LDAPOID is ASN::OctetString {}
-
-class Cro::LDAP::LDAPURL is ASN::OctetString {}
+#class Cro::LDAP::LDAPDN is Str {}
+#
+#class Cro::LDAP::LDAPOID is ASN::OctetString {}
+#
+#class Cro::LDAP::LDAPURL is ASN::OctetString {}
 
 class AttributeTypeAndValue {
     has Str $.type;

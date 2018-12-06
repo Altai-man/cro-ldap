@@ -9,12 +9,12 @@ enum ResultCode is export (
 
 role Cro::LDAP::Response {}
 
-class Cro::LDAP::Response::Bind does Cro::LDAP::Response does ASNType {
+class Cro::LDAP::Response::Bind does Cro::LDAP::Response does ASNSequence {
     has ResultCode $.result-code;
-    has Cro::LDAP::LDAPDN $.matched-dn;
-    has ASN::OctetString $.error-message;
-    has Cro::LDAP::LDAPURL @.referral is optional;
-    has ASN::OctetString $.server-sasl-creds is optional is tagged(7);
+    has Str $.matched-dn is OctetString;
+    has Str $.error-message is OctetString;
+    has Str @.referral is OctetString is optional;
+    has Str $.server-sasl-creds is OctetString is optional;# is tagged(7);
 
     method ASN-order() { <$!result-code $!matched-dn $!error-message @!referral $!server-sasl-creds> }
     method ASN-tag-value { 1 }

@@ -4,13 +4,25 @@ use Cro;
 use Cro::LDAP::Request;
 use Cro::LDAP::Response;
 
-class Cro::LDAP::Message does ASNType does Cro::Message {
+class ProtocolChoice does ASNChoice {
+    has $.value;
+
+    method new($value) { self.bless(:$value) }
+
+    method ASN-choice {
+        { bindRequest => Cro::LDAP::Request::Bind,
+        bindResponse => Cro::LDAP::Response::Bind,
+        unbindRequest => Cro::LDAP::Request::Unbind,
+        searchRequest => Cro::LDAP::Request::Search,
+        abandonRequest => Cro::LDAP::Request::Abandon }
+    }
+
+    method ASN-value { $!value }
+}
+
+class Cro::LDAP::Message does ASNSequence does Cro::Message {
     has Int $.message-id is required;
-    has $.protocol-op is choice-of(
-            bindRequest => Cro::LDAP::Request::Bind,
-            bindResponse => Cro::LDAP::Response::Bind,
-            unbindRequest => Cro::LDAP::Request::Unbind
-    );
+    has ProtocolChoice $.protocol-op;
     has Control @.controls is optional is tagged(0);
 
     method ASN-order { <$!message-id $!protocol-op @!controls> }

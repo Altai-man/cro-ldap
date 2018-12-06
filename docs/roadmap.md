@@ -18,9 +18,9 @@
 
 ##### Requests
 
-- [ ] Unbind request
+- [x] Unbind request
 
-- [ ] Search request - depends on types
+- [x] Search request
 - [ ] Search result entry
 - [ ] Search result done
 
@@ -39,6 +39,6 @@
 - [ ] Compare Operation
 - [ ] Compare Response
 
-- [ ] Abandon request
+- [x] Abandon request
 
 - [ ] Unsolicited Notification - a message from server to client about some special conditions
