@@ -7,7 +7,7 @@ class MockLDAPWorker does Cro::LDAP::Worker {
     method bind(Cro::LDAP::Request::Bind $req --> Cro::LDAP::Response::Bind) {
         Cro::LDAP::Response::Bind.new(
                 result-code => success,
-                matched-dn => Cro::LDAP::LDAPDN.new(""),
-                error-message => ASN::OctetString.new(""));
+                matched-dn => "",
+                error-message => "");
     }
 }

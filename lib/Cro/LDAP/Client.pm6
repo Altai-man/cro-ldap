@@ -1,10 +1,8 @@
 use ASN::Types;
-use Cro;
-use Cro::TCP;
+use Cro::LDAP::Message;
 use Cro::LDAP::Request;
 use Cro::LDAP::RequestSerializer;
 use Cro::LDAP::ResponseParser;
-use Cro::LDAP::Authentication;
 
 class Cro::LDAP::Client {
     has IO::Socket::Async $!socket;
@@ -20,7 +18,7 @@ class Cro::LDAP::Client {
                 whenever $out {
                     my $vow = $!next-response-vow;
                     $!next-response-vow = Nil;
-                    $vow.keep($_.protocol-op.value);
+                    $vow.keep($_.protocol-op.ASN-value.value);
                 }
             }.tap;
         }
@@ -55,10 +53,10 @@ class Cro::LDAP::Client {
 
     method bind(Str $name, :$simple, :$sasl) {
         Promise(supply {
-            my $message =Cro::LDAP::Request::Bind.new(
+            my $message = Cro::LDAP::Request::Bind.new(
                     version => 3,
-                    name => Cro::LDAP::LDAPDN.new("64643D6578616D706C652C64633D636F6D"),
-                    authentication => simple => ASN::OctetString.new("466F6F"));
+                    name => "64643D6578616D706C652C64633D636F6D",
+                    authentication => AuthChoice.new((simple => ASN::Types::OctetString.new("466F6F"))));
             whenever $!pipeline.send-request(self!wrap($message)) {
                 emit $_;
             }
@@ -71,6 +69,6 @@ class Cro::LDAP::Client {
         my $message-id = $!message-counter ⚛+= 2;
         Cro::LDAP::Message.new(
                 :$message-id,
-                protocol-op => %request-types{$request.^name} => $request);
+                protocol-op => ProtocolChoice.new((%request-types{$request.^name} => $request)));
     }
 }

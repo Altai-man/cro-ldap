@@ -1,6 +1,7 @@
 use Cro::Transform;
 use Cro::LDAP::Message;
 use Cro::LDAP::Response;
+use ASN::Serializer;
 use Cro::TCP;
 
 class Cro::LDAP::ResponseSerializer does Cro::Transform {
@@ -10,9 +11,10 @@ class Cro::LDAP::ResponseSerializer does Cro::Transform {
     method produces() { Cro::TCP::Message  }
 
     method transformer(Supply $responses) {
+        my $serializer = ASN::Serializer.new;
         supply {
             whenever $responses -> $response {
-                emit Cro::TCP::Message.new(data => self!wrap($response).serialize);
+                emit Cro::TCP::Message.new(data => $serializer.serialize(self!wrap($response)));
             }
             CATCH {
                 default {.note}
@@ -26,6 +28,6 @@ class Cro::LDAP::ResponseSerializer does Cro::Transform {
         my $message-id = $!message-counter ⚛+= 2;
         Cro::LDAP::Message.new(
                 :$message-id,
-                protocol-op => %response-types{$response.^name} => $response);
+                protocol-op => ProtocolChoice.new((%response-types{$response.^name} => $response)));
     }
 }

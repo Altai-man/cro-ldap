@@ -1,4 +1,4 @@
-use ASN::Types;
+#use ASN::Types;
 
 #class Cro::LDAP::LDAPDN is Str {}
 #
