@@ -1,5 +1,4 @@
 use ASN::Types;
-#use Cro::LDAP::LDAPDN;
 
 enum ResultCode is export (
         :success(0),
@@ -19,6 +18,16 @@ class Cro::LDAP::Response::Bind does Cro::LDAP::Response does ASNSequence {
     method ASN-tag-value { 1 }
 }
 
-#class Cro::LDAP::Response::SearchEntry does Cro::LDAP::Response does ASNSequence {
-#
-#}
+class PartialAttribute does ASNSequence {
+    has Str $.type is OctetString;
+    has Set $.vals;
+
+    method ASN-order { <$!type $!vals> }
+}
+
+class Cro::LDAP::Response::SearchEntry does Cro::LDAP::Response does ASNSequence {
+    has Str $.object-name is OctetString;
+    has PartialAttribute @.attributes;
+
+    method ASN-order { <$!object-name @!attributes> }
+}

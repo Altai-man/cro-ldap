@@ -32,8 +32,8 @@ my $request-with-controls-ber = Blob.new(
 my $request-with-controls = Cro::LDAP::Message.new(
         message-id => 5,
         protocol-op => ProtocolChoice.new((abandonRequest => Cro::LDAP::Request::Abandon.new(7))),
-        controls => (Control.new(control-type => "466F6F", criticality => True),
-                     Control.new(control-type => "426172", control-value => "4C6F737420496E2054696D65"))
+        controls => (Control.new(control-type => "Foo", criticality => True),
+                     Control.new(control-type => "Bar", control-value => "Lost In Time"))
         );
 
 is-deeply ASN::Serializer.serialize($request-with-controls), $request-with-controls-ber, "Controls are serialized correctly";
@@ -61,8 +61,8 @@ my $bind-request = Cro::LDAP::Message.new(
         message-id => 1,
         protocol-op => ProtocolChoice.new(('bindRequest' => Cro::LDAP::Request::Bind.new(
         version => 3,
-                name =>"64643D6578616D706C652C64633D636F6D",
-                authentication => AuthChoice.new((simple => ASN::Types::OctetString.new("466F6F"))))
+                name =>"dd=example,dc=com",
+                authentication => AuthChoice.new((simple => ASN::Types::OctetString.new("Foo"))))
                 )));
 
 is-deeply ASN::Serializer.serialize($bind-request, :mode(Implicit)), $bind-request-ber, "Bind request is serialized";
@@ -134,7 +134,7 @@ is-deeply $parser.parse($unbind-request-ber), $unbind-request, "Unbind request i
 my $search-request = Cro::LDAP::Message.new(
         message-id => 5,
         protocol-op => ProtocolChoice.new((searchRequest => Cro::LDAP::Request::Search.new(
-        base-object => "64633D6578616D706C652C64633D636F6D",
+        base-object => "dc=example,dc=com",
         scope => WholeSubtree,
         deref-aliases => NeverDerefAliases,
         size-limit => 0,
@@ -142,10 +142,10 @@ my $search-request = Cro::LDAP::Message.new(
         types-only => False,
         filter => Filter.new((equalityMatch =>
                 AttributeValueAssertion.new(
-                        attribute-desc  => "6F626A656374436C617373",
-                        assertion-value => "6F7267616E697A6174696F6E616C506572736F6E")
+                        attribute-desc  => "objectClass",
+                        assertion-value => "organizationalPerson")
         )),
-        attributes => ("646E", "636E")
+        attributes => ("dn", "cn")
                 ))));
 
 my $search-request-ber = Blob.new(
@@ -159,6 +159,19 @@ my $search-request-ber = Blob.new(
 is-deeply ASN::Serializer.serialize($search-request), $search-request-ber, "Search request is serialized";
 
 is-deeply $parser.parse($search-request-ber), $search-request, "Search request is parsed";
+
+# Search result
+
+my $search-result-entry-bar = Blob.new();
+
+my $search-result-entry = Cro::LDAP::Response::SearchEntry.new(
+        object-name => "testDN",
+        attributes => [
+                PartialAttribute.new(type => "first", vals => set ("Epsilon", "Solution")),
+                PartialAttribute.new(type => "second", vals => set ("Gamma", "Narberal"))
+        ]);
+
+say ASN::Serializer.serialize($search-result-entry);
 
 # Abandon request
 
