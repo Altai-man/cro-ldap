@@ -20,7 +20,11 @@ class Cro::LDAP::Response::Bind does Cro::LDAP::Response does ASNSequence {
 
 class PartialAttribute does ASNSequence {
     has Str $.type is OctetString;
-    has Set $.vals;
+    has ASNSetOf[ASN::Types::OctetString] $.vals;
+
+    method new(Str :$type, Positional :$vals) {
+        self.bless(:$type, vals => ASNSetOf[ASN::Types::OctetString].new($vals));
+    }
 
     method ASN-order { <$!type $!vals> }
 }
@@ -30,4 +34,5 @@ class Cro::LDAP::Response::SearchEntry does Cro::LDAP::Response does ASNSequence
     has PartialAttribute @.attributes;
 
     method ASN-order { <$!object-name @!attributes> }
+    method ASN-tag-value { 4 }
 }

@@ -23,7 +23,7 @@ my $parser = ASN::Parser.new(type => Cro::LDAP::Message);
 #    }
 #}
 
-my $request-with-controls-ber = Blob.new(
+my $request-with-controls-ber = Buf.new(
         0x30, 0x27, 0x02, 0x01, 0x05, 0x50, 0x01, 0x07, 0xA0, 0x1F, 0x30,
         0x08, 0x04, 0x03, 0x46, 0x6F, 0x6F, 0x01, 0x01, 0xFF, 0x30, 0x13,
         0x04, 0x03, 0x42, 0x61, 0x72, 0x04, 0x0C, 0x4C, 0x6F, 0x73, 0x74,
@@ -33,7 +33,7 @@ my $request-with-controls = Cro::LDAP::Message.new(
         message-id => 5,
         protocol-op => ProtocolChoice.new((abandonRequest => Cro::LDAP::Request::Abandon.new(7))),
         controls => (Control.new(control-type => "Foo", criticality => True),
-                     Control.new(control-type => "Bar", control-value => "Lost In Time"))
+                Control.new(control-type => "Bar", control-value => "Lost In Time"))
         );
 
 is-deeply ASN::Serializer.serialize($request-with-controls), $request-with-controls-ber, "Controls are serialized correctly";
@@ -51,7 +51,7 @@ is-deeply $parser.parse($request-with-controls-ber), $request-with-controls, "Co
 #    }
 #}
 
-my $bind-request-ber = Blob.new(
+my $bind-request-ber = Buf.new(
         0x30, 0x20, 0x02, 0x01, 0x01, 0x60, 0x1B, 0x02, 0x01, 0x03, 0x04,
         0x11, 0x64, 0x64, 0x3D, 0x65, 0x78, 0x61, 0x6D, 0x70, 0x6C, 0x65,
         0x2C, 0x64, 0x63, 0x3D, 0x63, 0x6F, 0x6D, 0x80, 0x03, 0x46, 0x6F,
@@ -60,10 +60,10 @@ my $bind-request-ber = Blob.new(
 my $bind-request = Cro::LDAP::Message.new(
         message-id => 1,
         protocol-op => ProtocolChoice.new(('bindRequest' => Cro::LDAP::Request::Bind.new(
-        version => 3,
+                version => 3,
                 name =>"dd=example,dc=com",
                 authentication => AuthChoice.new((simple => ASN::Types::OctetString.new("Foo"))))
-                )));
+        )));
 
 is-deeply ASN::Serializer.serialize($bind-request, :mode(Implicit)), $bind-request-ber, "Bind request is serialized";
 
@@ -83,12 +83,12 @@ is-deeply $parser.parse($bind-request-ber), $bind-request, "Bind request is pars
 my $bind-response = Cro::LDAP::Message.new(
         message-id => 2,
         protocol-op => ProtocolChoice.new((bindResponse => Cro::LDAP::Response::Bind.new(
-            result-code => success,
-            matched-dn => "",
-            error-message => "")
+                result-code => success,
+                matched-dn => "",
+                error-message => "")
         )));
 
-my $bind-response-ber = Blob.new(
+my $bind-response-ber = Buf.new(
         0x30, 0x0C, 0x02, 0x01, 0x02,0x61, 0x07, 0x0A, 0x01, 0x00, 0x04, 0x00, 0x04, 0x00);
 
 is-deeply ASN::Serializer.serialize($bind-response, :mode(Implicit)) , $bind-response-ber, "Bind response is serialized";
@@ -106,7 +106,7 @@ my $unbind-request = Cro::LDAP::Message.new(
         message-id => 5,
         protocol-op => ProtocolChoice.new((unbindRequest => Cro::LDAP::Request::Unbind.new)));
 
-my $unbind-request-ber = Blob.new(0x30, 0x05, 0x02, 0x01, 0x05, 0x42, 0x00);
+my $unbind-request-ber = Buf.new(0x30, 0x05, 0x02, 0x01, 0x05, 0x42, 0x00);
 
 is-deeply ASN::Serializer.serialize($unbind-request, :mode(Implicit)), $unbind-request-ber, "Unbind request is serialized";
 
@@ -134,21 +134,21 @@ is-deeply $parser.parse($unbind-request-ber), $unbind-request, "Unbind request i
 my $search-request = Cro::LDAP::Message.new(
         message-id => 5,
         protocol-op => ProtocolChoice.new((searchRequest => Cro::LDAP::Request::Search.new(
-        base-object => "dc=example,dc=com",
-        scope => WholeSubtree,
-        deref-aliases => NeverDerefAliases,
-        size-limit => 0,
-        time-limit => 0,
-        types-only => False,
-        filter => Filter.new((equalityMatch =>
-                AttributeValueAssertion.new(
-                        attribute-desc  => "objectClass",
-                        assertion-value => "organizationalPerson")
-        )),
-        attributes => ("dn", "cn")
+                base-object => "dc=example,dc=com",
+                scope => WholeSubtree,
+                deref-aliases => NeverDerefAliases,
+                size-limit => 0,
+                time-limit => 0,
+                types-only => False,
+                filter => Filter.new((equalityMatch =>
+                        AttributeValueAssertion.new(
+                                attribute-desc  => "objectClass",
+                                assertion-value => "organizationalPerson")
+                )),
+                attributes => ("dn", "cn")
                 ))));
 
-my $search-request-ber = Blob.new(
+my $search-request-ber = Buf.new(
         0x30, 0x56, 0x02, 0x01, 0x05, 0x63, 0x51, 0x04, 0x11, 0x64, 0x63, 0x3D, 0x65, 0x78, 0x61,
         0x6D, 0x70, 0x6C, 0x65, 0x2C, 0x64, 0x63, 0x3D, 0x63, 0x6F, 0x6D, 0x0A, 0x01, 0x02, 0x0A,
         0x01, 0x00, 0x02, 0x01, 0x00, 0x02, 0x01, 0x00, 0x01, 0x01, 0x00, 0xA3, 0x23, 0x04, 0x0B,
@@ -162,16 +162,76 @@ is-deeply $parser.parse($search-request-ber), $search-request, "Search request i
 
 # Search result
 
-my $search-result-entry-bar = Blob.new();
+#value LDAPMessage ::= {
+#    messageID 50,
+#    protocolOp searchResEntry : {
+#        objectName '74657374444E'H,
+#        attributes {
+#            {
+#                type '6669727374'H,
+#                vals { '457073696C6F6E'H, '536F6C7574696F6E'H } },
+#            {
+#                type '7365636F6E64'H,
+#                vals { '47616D6D61'H, '4E6172626572616C'H }
+#            }
+#        }
+#    }
+#}
 
-my $search-result-entry = Cro::LDAP::Response::SearchEntry.new(
-        object-name => "testDN",
-        attributes => [
-                PartialAttribute.new(type => "first", vals => set ("Epsilon", "Solution")),
-                PartialAttribute.new(type => "second", vals => set ("Gamma", "Narberal"))
-        ]);
+my $search-result-entry-ber1 = Buf.new(
+        0x30, 0x4A, 0x02, 0x01, 0x32, 0x64, 0x45, 0x04, 0x06, 0x74, 0x65, 0x73,
+        0x74, 0x44, 0x4E, 0x30, 0x3B, 0x30, 0x1C, 0x04, 0x05, 0x66, 0x69, 0x72,
+        0x73, 0x74, 0x31, 0x13, 0x04, 0x07, 0x45, 0x70, 0x73, 0x69, 0x6C, 0x6F,
+        0x6E, 0x04, 0x08, 0x53, 0x6F, 0x6C, 0x75, 0x74, 0x69, 0x6F, 0x6E, 0x30,
+        0x1B, 0x04, 0x06, 0x73, 0x65, 0x63, 0x6F, 0x6E, 0x64, 0x31, 0x11, 0x04,
+        0x05, 0x47, 0x61, 0x6D, 0x6D, 0x61, 0x04, 0x08, 0x4E, 0x61, 0x72, 0x62,
+        0x65, 0x72, 0x61, 0x6C);
 
-say ASN::Serializer.serialize($search-result-entry);
+my $search-result-entry-ber2 = Buf.new(
+        0x30, 0x4A, 0x02, 0x01, 0x32, 0x64, 0x45, 0x04, 0x06, 0x74, 0x65, 0x73,
+        0x74, 0x44, 0x4E, 0x30, 0x3B, 0x30, 0x1C, 0x04, 0x05, 0x66, 0x69, 0x72,
+        0x73, 0x74, 0x31, 0x13, 0x04, 0x07, 0x45, 0x70, 0x73, 0x69, 0x6C, 0x6F,
+        0x6E, 0x04, 0x08, 0x53, 0x6F, 0x6C, 0x75, 0x74, 0x69, 0x6F, 0x6E, 0x30,
+        0x1B, 0x04, 0x06, 0x73, 0x65, 0x63, 0x6F, 0x6E, 0x64, 0x31, 0x11, 0x04,
+        0x08, 0x4E, 0x61, 0x72, 0x62, 0x65, 0x72, 0x61, 0x6C, 0x04, 0x05, 0x47,
+        0x61, 0x6D, 0x6D, 0x61);
+
+my $search-result-entry-ber3 = Buf.new(
+        0x30, 0x4A, 0x02, 0x01, 0x32, 0x64, 0x45, 0x04, 0x06, 0x74, 0x65, 0x73,
+        0x74, 0x44, 0x4E, 0x30, 0x3B, 0x30, 0x1C, 0x04, 0x05, 0x66, 0x69, 0x72,
+        0x73, 0x74, 0x31, 0x13, 0x04, 0x08, 0x53, 0x6F, 0x6C, 0x75, 0x74, 0x69,
+        0x6F, 0x6E, 0x04, 0x07, 0x45, 0x70, 0x73, 0x69, 0x6C, 0x6F, 0x6E, 0x30,
+        0x1B, 0x04, 0x06, 0x73, 0x65, 0x63, 0x6F, 0x6E, 0x64, 0x31, 0x11, 0x04,
+        0x08, 0x4E, 0x61, 0x72, 0x62, 0x65, 0x72, 0x61, 0x6C, 0x04, 0x05, 0x47,
+        0x61, 0x6D, 0x6D, 0x61);
+
+my $search-result-entry-ber4 = Buf.new(
+        0x30, 0x4A, 0x02, 0x01, 0x32, 0x64, 0x45, 0x04, 0x06, 0x74, 0x65, 0x73,
+        0x74, 0x44, 0x4E, 0x30, 0x3B, 0x30, 0x1C, 0x04, 0x05, 0x66, 0x69, 0x72,
+        0x73, 0x74, 0x31, 0x13, 0x04, 0x08, 0x53, 0x6F, 0x6C, 0x75, 0x74, 0x69,
+        0x6F, 0x6E, 0x04, 0x07, 0x45, 0x70, 0x73, 0x69, 0x6C, 0x6F, 0x6E, 0x30,
+        0x1B, 0x04, 0x06, 0x73, 0x65, 0x63, 0x6F, 0x6E, 0x64, 0x31, 0x11, 0x04,
+        0x05, 0x47, 0x61, 0x6D, 0x6D, 0x61, 0x04, 0x08, 0x4E, 0x61, 0x72, 0x62,
+        0x65, 0x72, 0x61, 0x6C);
+
+my $search-result-entry = Cro::LDAP::Message.new(
+        message-id => 50,
+        protocol-op => ProtocolChoice.new((searchEntry =>
+                Cro::LDAP::Response::SearchEntry.new(
+                        object-name => "testDN",
+                        attributes => [
+                            PartialAttribute.new(type => "first", vals => ("Epsilon", "Solution")),
+                            PartialAttribute.new(type => "second", vals => ("Gamma", "Narberal"))
+                        ])
+        )));
+
+my $serialized-result-entry = ASN::Serializer.serialize($search-result-entry);
+ok $serialized-result-entry eqv $search-result-entry-ber1 ||
+        $serialized-result-entry eqv $search-result-entry-ber2 ||
+        $serialized-result-entry eqv $search-result-entry-ber3 ||
+        $serialized-result-entry eqv $search-result-entry-ber4, "Search result entry is serialized";
+
+is-deeply $parser.parse($search-result-entry-ber3), $search-result-entry, "Search result entry is parsed";
 
 # Abandon request
 
@@ -185,7 +245,7 @@ my $abandon-request = Cro::LDAP::Message.new(
         protocol-op => ProtocolChoice.new((abandonRequest => Cro::LDAP::Request::Abandon.new(7)))
         );
 
-my $abandon-request-ber = Blob.new(0x30, 0x06, 0x02, 0x01, 0x05, 0x50, 0x01, 0x07);
+my $abandon-request-ber = Buf.new(0x30, 0x06, 0x02, 0x01, 0x05, 0x50, 0x01, 0x07);
 
 is ASN::Serializer.serialize($abandon-request), $abandon-request-ber, "Abandon request is serialized";
 
