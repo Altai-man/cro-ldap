@@ -231,7 +231,18 @@ ok $serialized-result-entry eqv $search-result-entry-ber1 ||
         $serialized-result-entry eqv $search-result-entry-ber3 ||
         $serialized-result-entry eqv $search-result-entry-ber4, "Search result entry is serialized";
 
-is-deeply $parser.parse($search-result-entry-ber3), $search-result-entry, "Search result entry is parsed";
+my $parsed-search-result-entry = $parser.parse($search-result-entry-ber3);
+
+subtest {
+    ok $parsed-search-result-entry.message-id == 50;
+    my $value = $parsed-search-result-entry.protocol-op.ASN-value.value;
+    ok $value ~~ Cro::LDAP::Response::SearchEntry;
+    ok $value.object-name eq "testDN";
+    ok $value.attributes[0].type eq "first";
+    ok $value.attributes[0].vals.keys.Set eqv set ("Epsilon", "Solution");
+    ok $value.attributes[1].type eq "second";
+    ok $value.attributes[1].vals.keys.Set eqv set ("Narberal", "Gamma");
+}, "Search result entry is parsed";
 
 # Abandon request
 
