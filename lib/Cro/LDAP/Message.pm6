@@ -9,7 +9,9 @@ class ProtocolChoice does ASNChoice {
         bindResponse => Cro::LDAP::Response::Bind,
         unbindRequest => Cro::LDAP::Request::Unbind,
         searchRequest => Cro::LDAP::Request::Search,
-        searchEntry => Cro::LDAP::Response::SearchEntry,
+        searchResEntry => Cro::LDAP::Response::SearchEntry,
+        searchResDone => Cro::LDAP::Response::SearchDone,
+        searchResRef => Cro::LDAP::Response::SearchRef,
         abandonRequest => Cro::LDAP::Request::Abandon }
     }
 }

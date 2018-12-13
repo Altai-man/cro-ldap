@@ -5,13 +5,16 @@ enum ResultCode is export (
         :operationsError(1)
 );
 
-role Cro::LDAP::Response {}
-
-class Cro::LDAP::Response::Bind does Cro::LDAP::Response does ASNSequence {
+my role Cro::LDAP::LDAPResult {
     has ResultCode $.result-code;
     has Str $.matched-dn is OctetString;
     has Str $.error-message is OctetString;
     has Str @.referral is OctetString is optional;
+}
+
+role Cro::LDAP::Response {}
+
+class Cro::LDAP::Response::Bind does Cro::LDAP::Response does Cro::LDAP::LDAPResult does ASNSequence {
     has Str $.server-sasl-creds is OctetString is optional is tagged(7);
 
     method ASN-order() { <$!result-code $!matched-dn $!error-message @!referral $!server-sasl-creds> }
@@ -35,4 +38,18 @@ class Cro::LDAP::Response::SearchEntry does Cro::LDAP::Response does ASNSequence
 
     method ASN-order { <$!object-name @!attributes> }
     method ASN-tag-value { 4 }
+}
+
+class Cro::LDAP::Response::SearchDone does Cro::LDAP::Response does Cro::LDAP::LDAPResult does ASNSequence {
+    method ASN-order { <$!result-code $!matched-dn $!error-message @!referral> }
+    method ASN-tag-value { 5 }
+}
+
+class Cro::LDAP::Response::SearchRef does Positional[ASN::Types::OctetString] {
+    has @.urls;
+
+    method new(@urls) { self.bless(:@urls) }
+
+    method iterator(Cro::LDAP::Response::SearchRef:D:){ @!urls.iterator }
+    method ASN-tag-value { 19 }
 }

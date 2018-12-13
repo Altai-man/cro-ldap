@@ -216,7 +216,7 @@ my $search-result-entry-ber4 = Buf.new(
 
 my $search-result-entry = Cro::LDAP::Message.new(
         message-id => 50,
-        protocol-op => ProtocolChoice.new((searchEntry =>
+        protocol-op => ProtocolChoice.new((searchResEntry =>
                 Cro::LDAP::Response::SearchEntry.new(
                         object-name => "testDN",
                         attributes => [
@@ -243,6 +243,70 @@ subtest {
     ok $value.attributes[1].type eq "second";
     ok $value.attributes[1].vals.keys.Set eqv set ("Narberal", "Gamma");
 }, "Search result entry is parsed";
+
+# Search result done
+
+#value LDAPMessage ::= {
+#    messageID 5,
+#    protocolOp searchResDone : {
+#        resultCode success,
+#        matchedDN '666F6F'H,
+#        errorMessage ''H
+#    }
+#}
+
+my $search-result-done = Cro::LDAP::Message.new(
+        message-id => 5,
+        protocol-op => ProtocolChoice.new((searchResDone => Cro::LDAP::Response::SearchDone.new(
+                result-code => success,
+                matched-dn => "foo",
+                error-message => "")))
+        );
+
+my $search-result-done-ber = Buf.new(
+        0x30, 0x0F, 0x02, 0x01, 0x05, 0x65, 0x0A, 0x0A,
+        0x01, 0x00, 0x04, 0x03, 0x66, 0x6F, 0x6F, 0x04, 0x00);
+
+is ASN::Serializer.serialize($search-result-done), $search-result-done-ber, "Search result done is serialized";
+
+is-deeply $parser.parse($search-result-done-ber), $search-result-done, "Search result done is parsed";
+
+# Search result reference
+
+#value LDAPMessage ::= {
+#    messageID 5,
+#    protocolOp searchResRef : {
+#        '6C6461703A2F2F686F7374622F4F553D50656F706C652C44433D4578616D706C652C44433D4E45543F3F737562'H,
+#        '6C6461703A2F2F686F7374662F4F553D436F6E73756C74616E74732C4F553D50656F706C652C44433D4578616D706C652C44433D4E45543F3F737562'H
+#    }
+#}
+
+my $search-result-reference = Cro::LDAP::Message.new(
+        message-id => 5,
+        protocol-op => ProtocolChoice.new((searchResRef => Cro::LDAP::Response::SearchRef.new(
+                ("ldap://hostb/OU=People,DC=Example,DC=NET??sub",
+                 "ldap://hostf/OU=Consultants,OU=People,DC=Example,DC=NET??sub")
+            )
+        )
+    )
+);
+
+my $search-result-reference-ber = Buf.new(
+        0x30, 0x72, 0x02, 0x01, 0x05, 0x73, 0x6D, 0x04, 0x2D, 0x6C, 0x64,
+        0x61, 0x70, 0x3A, 0x2F, 0x2F, 0x68, 0x6F, 0x73, 0x74, 0x62, 0x2F,
+        0x4F, 0x55, 0x3D, 0x50, 0x65, 0x6F, 0x70, 0x6C, 0x65, 0x2C, 0x44,
+        0x43, 0x3D, 0x45, 0x78, 0x61, 0x6D, 0x70, 0x6C, 0x65, 0x2C, 0x44,
+        0x43, 0x3D, 0x4E, 0x45, 0x54, 0x3F, 0x3F, 0x73, 0x75, 0x62, 0x04,
+        0x3C, 0x6C, 0x64, 0x61, 0x70, 0x3A, 0x2F, 0x2F, 0x68, 0x6F, 0x73,
+        0x74, 0x66, 0x2F, 0x4F, 0x55, 0x3D, 0x43, 0x6F, 0x6E, 0x73, 0x75,
+        0x6C, 0x74, 0x61, 0x6E, 0x74, 0x73, 0x2C, 0x4F, 0x55, 0x3D, 0x50,
+        0x65, 0x6F, 0x70, 0x6C, 0x65, 0x2C, 0x44, 0x43, 0x3D, 0x45, 0x78,
+        0x61, 0x6D, 0x70, 0x6C, 0x65, 0x2C, 0x44, 0x43, 0x3D, 0x4E, 0x45,
+        0x54, 0x3F, 0x3F, 0x73, 0x75, 0x62);
+
+is-deeply ASN::Serializer.serialize($search-result-reference), $search-result-reference-ber, "Search result reference is serialized";
+
+is-deeply $parser.parse($search-result-reference-ber), $search-result-reference, "Search result reference is parsed";
 
 # Abandon request
 
