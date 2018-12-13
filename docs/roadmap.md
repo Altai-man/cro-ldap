@@ -21,8 +21,9 @@
 - [x] Unbind request
 
 - [x] Search request
-- [ ] Search result entry
-- [ ] Search result done
+- [x] Search result entry
+- [x] Search result done
+- [x] Search result reference
 
 - [ ] Modify request
 - [ ] Modify response
