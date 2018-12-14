@@ -91,6 +91,14 @@ class Cro::LDAP::Request::Modify does ASNSequence {
     method ASN-tag-value { 6 }
 }
 
+class Cro::LDAP::Request::Add does ASNSequence {
+    has Str $.entry is OctetString;
+    has AttributeTypeAndValues @.attributes;
+
+    method ASN-order { <$!entry @!attributes> }
+    method ASN-tag-value { 8 }
+}
+
 class Cro::LDAP::Request::Abandon is Int {
     method ASN-tag-value { 16 }
 }

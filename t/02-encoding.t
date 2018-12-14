@@ -311,9 +311,18 @@ is-deeply $parser.parse($search-result-reference-ber), $search-result-reference,
 
 #value LDAPMessage ::= {
 #    messageID 5,
-#    protocolOp searchResRef : {
-#        '6C6461703A2F2F686F7374622F4F553D50656F706C652C44433D4578616D706C652C44433D4E45543F3F737562'H,
-#        '6C6461703A2F2F686F7374662F4F553D436F6E73756C74616E74732C4F553D50656F706C652C44433D4578616D706C652C44433D4E45543F3F737562'H
+#    protocolOp modifyRequest : {
+#        object '64633D6578616D706C652C64633D636F6D'H,
+#        modification {
+#            {
+#                operation add,
+#                modification { type '74797065'H, vals { '76616C7565'H } }
+#            },
+#            {
+#                operation delete,
+#                modification { type '74797065'H, vals { '76616C7565'H } }
+#            }
+#        }
 #    }
 #}
 
@@ -370,6 +379,72 @@ my $modify-response-ber = Buf.new(
 is-deeply ASN::Serializer.serialize($modify-response), $modify-response-ber, "Modify response is serialized";
 
 is-deeply $parser.parse($modify-response-ber), $modify-response, "Modify response is parsed";
+
+# Add request
+
+#value LDAPMessage ::= {
+#    messageID 5,
+#    protocolOp addRequest : {
+#        entry ''H,
+#        attributes {
+#            { type '74797065'H, vals { '76616C7565'H } },
+#            { type '74797065'H, vals { '76616C7565'H } }
+#        }
+#    }
+#}
+
+my $add-req = Cro::LDAP::Message.new(
+        message-id => 5,
+        protocol-op => ProtocolChoice.new((addRequest => Cro::LDAP::Request::Add.new(
+                entry => "dc=example,dc=com",
+                attributes => (
+                    AttributeTypeAndValues.new(type => "type", vals => ['value']),
+                    AttributeTypeAndValues.new(type => "type", vals => ['value'])
+                )
+            )
+        )
+    )
+);
+
+my $add-req-ber = Buf.new(
+        0x30, 0x3C, 0x02, 0x01, 0x05, 0x68, 0x37, 0x04, 0x11, 0x64, 0x63, 0x3D,
+        0x65, 0x78, 0x61, 0x6D, 0x70, 0x6C, 0x65, 0x2C, 0x64, 0x63, 0x3D, 0x63,
+        0x6F, 0x6D, 0x30, 0x22, 0x30, 0x0F, 0x04, 0x04, 0x74, 0x79, 0x70, 0x65,
+        0x31, 0x07, 0x04, 0x05, 0x76, 0x61, 0x6C, 0x75, 0x65, 0x30, 0x0F, 0x04,
+        0x04, 0x74, 0x79, 0x70, 0x65, 0x31, 0x07, 0x04, 0x05, 0x76, 0x61, 0x6C,
+        0x75, 0x65);
+
+is-deeply ASN::Serializer.serialize($add-req), $add-req-ber, "Add request is serialized";
+
+is-deeply $parser.parse($add-req-ber), $add-req, "Add request reference is parsed";
+
+# Add response
+
+#value LDAPMessage ::= {
+#    messageID 5,
+#    protocolOp addResponse : {
+#        resultCode operationsError,
+#        matchedDN '666F6F'H,
+#        errorMessage '4E6F207370616365206C656674'H
+#    }
+#}
+
+my $add-response = Cro::LDAP::Message.new(
+        message-id => 5,
+        protocol-op => ProtocolChoice.new((addResponse => Cro::LDAP::Response::Add.new(
+                result-code => operationsError,
+                matched-dn => "foo",
+                error-message => "No space left")))
+        );
+
+my $add-response-ber = Buf.new(
+        0x30, 0x1C, 0x02, 0x01, 0x05, 0x69, 0x17, 0x0A, 0x01, 0x01, 0x04,
+        0x03, 0x66, 0x6F, 0x6F, 0x04, 0x0D, 0x4E, 0x6F, 0x20, 0x73, 0x70,
+        0x61, 0x63, 0x65, 0x20, 0x6C, 0x65, 0x66, 0x74);
+
+is-deeply ASN::Serializer.serialize($add-response), $add-response-ber, "Add response is serialized";
+
+is-deeply $parser.parse($add-response-ber), $add-response, "Add response is parsed";
 
 # Abandon request
 

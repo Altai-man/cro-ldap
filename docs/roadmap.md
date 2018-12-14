@@ -28,8 +28,8 @@
 - [x] Modify request
 - [x] Modify response
 
-- [ ] Add request
-- [ ] Add Response
+- [x] Add request
+- [x] Add Response
 
 - [ ] Delete request
 - [ ] Delete response

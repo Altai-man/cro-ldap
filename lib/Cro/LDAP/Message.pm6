@@ -14,6 +14,8 @@ class ProtocolChoice does ASNChoice {
         searchResRef => Cro::LDAP::Response::SearchRef,
         modifyRequest => Cro::LDAP::Request::Modify,
         modifyResponse => Cro::LDAP::Response::Modify,
+        addRequest => Cro::LDAP::Request::Add,
+        addResponse => Cro::LDAP::Response::Add,
         abandonRequest => Cro::LDAP::Request::Abandon }
     }
 }
