@@ -308,6 +308,42 @@ is-deeply ASN::Serializer.serialize($search-result-reference), $search-result-re
 
 is-deeply $parser.parse($search-result-reference-ber), $search-result-reference, "Search result reference is parsed";
 
+# Modify request
+
+#value LDAPMessage ::= {
+#    messageID 5,
+#    protocolOp searchResRef : {
+#        '6C6461703A2F2F686F7374622F4F553D50656F706C652C44433D4578616D706C652C44433D4E45543F3F737562'H,
+#        '6C6461703A2F2F686F7374662F4F553D436F6E73756C74616E74732C4F553D50656F706C652C44433D4578616D706C652C44433D4E45543F3F737562'H
+#    }
+#}
+
+my $modify-req = Cro::LDAP::Message.new(
+        message-id => 5,
+        protocol-op => ProtocolChoice.new((modifyRequest => Cro::LDAP::Request::Modify.new(
+                object => "dc=example,dc=com",
+                modification => (
+                    ModifyOp.new(:operation(ADD), modification => AttributeTypeAndValues.new(type => "type", vals => ['value'])),
+                    ModifyOp.new(:operation(DELETE), modification => AttributeTypeAndValues.new(type => "type", vals => ['value']))
+                )
+            )
+        )
+    )
+);
+
+my $modify-req-ber = Buf.new(
+        0x30, 0x46, 0x02, 0x01, 0x05, 0x66, 0x41, 0x04, 0x11, 0x64, 0x63,
+        0x3D, 0x65, 0x78, 0x61, 0x6D, 0x70, 0x6C, 0x65, 0x2C, 0x64, 0x63,
+        0x3D, 0x63, 0x6F, 0x6D, 0x30, 0x2C, 0x30, 0x14, 0x0A, 0x01, 0x00,
+        0x30, 0x0F, 0x04, 0x04, 0x74, 0x79, 0x70, 0x65, 0x31, 0x07, 0x04,
+        0x05, 0x76, 0x61, 0x6C, 0x75, 0x65, 0x30, 0x14, 0x0A, 0x01, 0x01,
+        0x30, 0x0F, 0x04, 0x04, 0x74, 0x79, 0x70, 0x65, 0x31, 0x07, 0x04,
+        0x05, 0x76, 0x61, 0x6C, 0x75, 0x65);
+
+is-deeply ASN::Serializer.serialize($modify-req), $modify-req-ber, "Modify result reference is serialized";
+
+is-deeply $parser.parse($modify-req-ber), $modify-req, "Modify result reference is parsed";
+
 # Abandon request
 
 #value LDAPMessage ::= {

@@ -64,6 +64,34 @@ class Cro::LDAP::Request::Search does ASNSequence {
     method ASN-tag-value { 3 }
 }
 
+enum ModifyAction is export <ADD DELETE REPLACE>;
+
+class AttributeTypeAndValues does ASNSequence {
+    has Str $.type is OctetString;
+    has ASNSetOf[ASN::Types::OctetString] $.vals;
+
+    method new(Str :$type, Positional :$vals) {
+        self.bless(:$type, vals => ASNSetOf[ASN::Types::OctetString].new($vals));
+    }
+
+    method ASN-order { <$!type $!vals> }
+}
+
+class ModifyOp does ASNSequence {
+    has ModifyAction $.operation;
+    has AttributeTypeAndValues $.modification;
+
+    method ASN-order { <$!operation $!modification> }
+}
+
+class Cro::LDAP::Request::Modify does ASNSequence {
+    has Str $.object is OctetString;
+    has ModifyOp @.modification;
+
+    method ASN-order { <$!object @!modification> }
+    method ASN-tag-value { 6 }
+}
+
 class Cro::LDAP::Request::Abandon is Int {
     method ASN-tag-value { 16 }
 }
