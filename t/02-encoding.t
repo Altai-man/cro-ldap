@@ -1,4 +1,3 @@
-use Cro::LDAP::LDAPDN;
 use Cro::LDAP::Authentication;
 use Cro::LDAP::Message;
 use Cro::LDAP::Request;

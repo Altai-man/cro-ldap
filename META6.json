@@ -1,12 +1,13 @@
 {
     "license": "Artistic-2.0",
     "source-url": "https://github.com/croservices/cro-ldap.git",
-    "depends": ["Cro::Core", "ASN::BER"],
+    "depends": [
+        "Cro::Core",
+        "ASN::BER"
+    ],
     "provides": {
         "Cro::LDAP::Request::Bind": "lib/Cro/LDAP/Request/Bind.pm6",
         "Cro::LDAP::RequestSerializer": "lib/Cro/LDAP/RequestSerializer.pm6",
-        "Cro::LDAP::LDAPDN": "lib/Cro/LDAP/LDAPDN.pm6",
-        "Cro::LDAP::Result": "lib/Cro/LDAP/Result.pm6",
         "Cro::LDAP::Request": "lib/Cro/LDAP/Request.pm6",
         "Cro::LDAP::GenericParser": "lib/Cro/LDAP/GenericParser.pm6",
         "Cro::LDAP::Message": "lib/Cro/LDAP/Message.pm6",

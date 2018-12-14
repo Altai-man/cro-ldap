@@ -1,6 +1,5 @@
 use ASN::Types;
 use Cro::LDAP::Authentication;
-use Cro::LDAP::LDAPDN;
 
 class Control does ASNSequence {
     has Str $.control-type is OctetString;
