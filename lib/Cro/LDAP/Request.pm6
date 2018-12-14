@@ -99,6 +99,10 @@ class Cro::LDAP::Request::Add does ASNSequence {
     method ASN-tag-value { 8 }
 }
 
+class Cro::LDAP::Request::Del is ASN::Types::OctetString {
+    method ASN-tag-value { 10 }
+}
+
 class Cro::LDAP::Request::Abandon is Int {
     method ASN-tag-value { 16 }
 }

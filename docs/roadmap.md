@@ -31,8 +31,8 @@
 - [x] Add request
 - [x] Add Response
 
-- [ ] Delete request
-- [ ] Delete response
+- [x] Delete request
+- [x] Delete response
 
 - [ ] Modify DN request
 - [ ] Modify DN response

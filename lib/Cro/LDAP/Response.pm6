@@ -62,3 +62,7 @@ class Cro::LDAP::Response::Modify does Cro::LDAP::Response does Cro::LDAP::LDAPR
 class Cro::LDAP::Response::Add does Cro::LDAP::Response does Cro::LDAP::LDAPResult  {
     method ASN-tag-value { 9 }
 }
+
+class Cro::LDAP::Response::Del does Cro::LDAP::Response does Cro::LDAP::LDAPResult  {
+    method ASN-tag-value { 11 }
+}

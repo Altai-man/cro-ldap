@@ -348,9 +348,9 @@ my $modify-req-ber = Buf.new(
         0x30, 0x0F, 0x04, 0x04, 0x74, 0x79, 0x70, 0x65, 0x31, 0x07, 0x04,
         0x05, 0x76, 0x61, 0x6C, 0x75, 0x65);
 
-is-deeply ASN::Serializer.serialize($modify-req), $modify-req-ber, "Modify result reference is serialized";
+is-deeply ASN::Serializer.serialize($modify-req), $modify-req-ber, "Modify result is serialized";
 
-is-deeply $parser.parse($modify-req-ber), $modify-req, "Modify result reference is parsed";
+is-deeply $parser.parse($modify-req-ber), $modify-req, "Modify result is parsed";
 
 # Modify response
 
@@ -416,7 +416,7 @@ my $add-req-ber = Buf.new(
 
 is-deeply ASN::Serializer.serialize($add-req), $add-req-ber, "Add request is serialized";
 
-is-deeply $parser.parse($add-req-ber), $add-req, "Add request reference is parsed";
+is-deeply $parser.parse($add-req-ber), $add-req, "Add request is parsed";
 
 # Add response
 
@@ -445,6 +445,49 @@ my $add-response-ber = Buf.new(
 is-deeply ASN::Serializer.serialize($add-response), $add-response-ber, "Add response is serialized";
 
 is-deeply $parser.parse($add-response-ber), $add-response, "Add response is parsed";
+
+# Del request
+
+#value LDAPMessage ::= {
+#    messageID 5,
+#    protocolOp delRequest : '64633D636F6D'H
+#}
+
+my $del-req = Cro::LDAP::Message.new(
+        message-id => 5,
+        protocol-op => ProtocolChoice.new((delRequest => Cro::LDAP::Request::Del.new("dc=com")))
+);
+
+my $del-req-ber = Buf.new(0x30, 0x0B, 0x02, 0x01, 0x05, 0x4A, 0x06, 0x64, 0x63, 0x3D, 0x63, 0x6F, 0x6D);
+
+is-deeply ASN::Serializer.serialize($del-req), $del-req-ber, "Del request is serialized";
+
+is-deeply $parser.parse($del-req-ber), $del-req, "Del request is parsed";
+
+# Del response
+
+#value LDAPMessage ::= {
+#    messageID 5,
+#    protocolOp delResponse : {
+#        resultCode success,
+#        matchedDN '666F6F'H,
+#        errorMessage ''H
+#    }
+#}
+
+my $del-response = Cro::LDAP::Message.new(
+        message-id => 5,
+        protocol-op => ProtocolChoice.new((delResponse => Cro::LDAP::Response::Del.new(
+                result-code => success,
+                matched-dn => "foo",
+                error-message => "")))
+        );
+
+my $del-response-ber = Buf.new(0x30, 0x0F, 0x02, 0x01, 0x05, 0x6B, 0x0A, 0x0A, 0x01, 0x00, 0x04, 0x03, 0x66, 0x6F, 0x6F, 0x04, 0x00);
+
+is-deeply ASN::Serializer.serialize($del-response), $del-response-ber, "Del response is serialized";
+
+is-deeply $parser.parse($del-response-ber), $del-response, "Del response is parsed";
 
 # Abandon request
 
