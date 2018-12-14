@@ -53,3 +53,8 @@ class Cro::LDAP::Response::SearchRef does Positional[ASN::Types::OctetString] {
     method iterator(Cro::LDAP::Response::SearchRef:D:){ @!urls.iterator }
     method ASN-tag-value { 19 }
 }
+
+class Cro::LDAP::Response::Modify does Cro::LDAP::Response does Cro::LDAP::LDAPResult does ASNSequence {
+    method ASN-order { <$!result-code $!matched-dn $!error-message @!referral> }
+    method ASN-tag-value { 7 }
+}

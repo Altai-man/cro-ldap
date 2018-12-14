@@ -266,7 +266,7 @@ my $search-result-done-ber = Buf.new(
         0x30, 0x0F, 0x02, 0x01, 0x05, 0x65, 0x0A, 0x0A,
         0x01, 0x00, 0x04, 0x03, 0x66, 0x6F, 0x6F, 0x04, 0x00);
 
-is ASN::Serializer.serialize($search-result-done), $search-result-done-ber, "Search result done is serialized";
+is-deeply ASN::Serializer.serialize($search-result-done), $search-result-done-ber, "Search result done is serialized";
 
 is-deeply $parser.parse($search-result-done-ber), $search-result-done, "Search result done is parsed";
 
@@ -342,6 +342,34 @@ my $modify-req-ber = Buf.new(
 is-deeply ASN::Serializer.serialize($modify-req), $modify-req-ber, "Modify result reference is serialized";
 
 is-deeply $parser.parse($modify-req-ber), $modify-req, "Modify result reference is parsed";
+
+# Modify response
+
+#value LDAPMessage ::= {
+#    messageID 5,
+#    protocolOp modifyResponse : {
+#        resultCode operationsError,
+#        matchedDN '666F6F'H,
+#        errorMessage '4E6F2073756368206F626A656374'H
+#    }
+#}
+
+my $modify-response = Cro::LDAP::Message.new(
+        message-id => 5,
+        protocol-op => ProtocolChoice.new((modifyResponse => Cro::LDAP::Response::Modify.new(
+                result-code => operationsError,
+                matched-dn => "foo",
+                error-message => "No such object")))
+        );
+
+my $modify-response-ber = Buf.new(
+        0x30, 0x1D, 0x02, 0x01, 0x05, 0x67, 0x18, 0x0A, 0x01, 0x01, 0x04, 0x03,
+        0x66, 0x6F, 0x6F, 0x04, 0x0E, 0x4E, 0x6F, 0x20, 0x73, 0x75, 0x63, 0x68,
+        0x20, 0x6F, 0x62, 0x6A, 0x65, 0x63, 0x74);
+
+is-deeply ASN::Serializer.serialize($modify-response), $modify-response-ber, "Modify response is serialized";
+
+is-deeply $parser.parse($modify-response-ber), $modify-response, "Modify response is parsed";
 
 # Abandon request
 

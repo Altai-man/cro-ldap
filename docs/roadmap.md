@@ -25,8 +25,8 @@
 - [x] Search result done
 - [x] Search result reference
 
-- [ ] Modify request
-- [ ] Modify response
+- [x] Modify request
+- [x] Modify response
 
 - [ ] Add request
 - [ ] Add Response
