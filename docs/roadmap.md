@@ -34,11 +34,11 @@
 - [x] Delete request
 - [x] Delete response
 
-- [ ] Modify DN request
-- [ ] Modify DN response
+- [x] Modify DN request
+- [x] Modify DN response
 
-- [ ] Compare Operation
-- [ ] Compare Response
+- [x] Compare Operation
+- [x] Compare Response
 
 - [x] Abandon request
 

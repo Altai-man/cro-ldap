@@ -103,6 +103,24 @@ class Cro::LDAP::Request::Del is ASN::Types::OctetString {
     method ASN-tag-value { 10 }
 }
 
+class Cro::LDAP::Request::ModifyDN does ASNSequence {
+    has Str $.entry is OctetString;
+    has Str $.new-rdn is OctetString;
+    has Bool $.delete-old-rdn;
+    has Str $.new-superior is OctetString is optional is tagged(0);
+
+    method ASN-order { <$!entry $!new-rdn $!delete-old-rdn $!new-superior> }
+    method ASN-tag-value { 12 }
+}
+
+class Cro::LDAP::Request::Compare does ASNSequence {
+    has Str $.entry is OctetString;
+    has AttributeValueAssertion $.ava;
+
+    method ASN-order { <$!entry $!ava> }
+    method ASN-tag-value { 14 }
+}
+
 class Cro::LDAP::Request::Abandon is Int {
     method ASN-tag-value { 16 }
 }

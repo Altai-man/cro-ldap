@@ -489,6 +489,125 @@ is-deeply ASN::Serializer.serialize($del-response), $del-response-ber, "Del resp
 
 is-deeply $parser.parse($del-response-ber), $del-response, "Del response is parsed";
 
+# Modify DN request
+
+#value LDAPMessage ::= {
+#    messageID 5,
+#    protocolOp modDNRequest : {
+#        entry '646E3D666F6F'H,
+#        newrdn '646E3D626F6F'H,
+#        deleteoldrdn TRUE,
+#        newSuperior '7375706572696F72'H
+#    }
+#}
+
+my $mod-dn-req = Cro::LDAP::Message.new(
+        message-id => 5,
+        protocol-op => ProtocolChoice.new((modDNRequest => Cro::LDAP::Request::ModifyDN.new(
+                entry => "dn=foo",
+                new-rdn => "dn=boo",
+                :delete-old-rdn,
+                new-superior => 'superior'
+            )
+        )
+    )
+);
+
+my $mod-dn-req-ber = Buf.new(
+        0x30, 0x22, 0x02, 0x01, 0x05, 0x6C, 0x1D, 0x04, 0x06, 0x64, 0x6E, 0x3D,
+        0x66, 0x6F, 0x6F, 0x04, 0x06, 0x64, 0x6E, 0x3D, 0x62, 0x6F, 0x6F, 0x01,
+        0x01, 0xFF, 0x80, 0x08, 0x73, 0x75, 0x70, 0x65, 0x72, 0x69, 0x6F, 0x72);
+
+is-deeply ASN::Serializer.serialize($mod-dn-req), $mod-dn-req-ber, "Modify DN request is serialized";
+
+is-deeply $parser.parse($mod-dn-req-ber), $mod-dn-req, "Modify DN request is parsed";
+
+# Modify DN response
+
+#value LDAPMessage ::= {
+#    messageID 5,
+#    protocolOp modDNResponse : {
+#        resultCode success,
+#        matchedDN '666F6F'H,
+#        errorMessage ''H
+#    }
+#}
+
+my $mod-dn-response = Cro::LDAP::Message.new(
+        message-id => 5,
+        protocol-op => ProtocolChoice.new((modDNResponse => Cro::LDAP::Response::ModifyDN.new(
+                result-code => success,
+                matched-dn => "foo",
+                error-message => "")))
+        );
+
+my $mod-dn-response-ber = Buf.new(0x30, 0x0F, 0x02, 0x01, 0x05, 0x6D, 0x0A, 0x0A, 0x01, 0x00, 0x04, 0x03, 0x66, 0x6F, 0x6F, 0x04, 0x00);
+
+is-deeply ASN::Serializer.serialize($mod-dn-response), $mod-dn-response-ber, "Mod DN response is serialized";
+
+is-deeply $parser.parse($mod-dn-response-ber), $mod-dn-response, "Mod DN response is parsed";
+
+# Compare request
+
+#value LDAPMessage ::= {
+#    messageID 5,
+#    protocolOp compareRequest : {
+#        entry '64633D6578616D706C652C64633D636F6D'H,
+#        ava {
+#            attributeDesc '6F626A656374436C617373'H,
+#            assertionValue '6F7267616E697A6174696F6E616C506572736F6E'H
+#        }
+#    }
+#}
+
+my $compare-req = Cro::LDAP::Message.new(
+        message-id => 5,
+        protocol-op => ProtocolChoice.new((compareRequest => Cro::LDAP::Request::Compare.new(
+                entry => "dc=example,dc=com",
+                ava => AttributeValueAssertion.new(
+                        attribute-desc  => "objectClass",
+                        assertion-value => "organizationalPerson")
+            )
+        )
+    )
+);
+
+my $compare-req-ber = Buf.new(
+        0x30, 0x3D, 0x02, 0x01, 0x05, 0x6E, 0x38, 0x04, 0x11, 0x64, 0x63, 0x3D, 0x65,
+        0x78, 0x61, 0x6D, 0x70, 0x6C, 0x65, 0x2C, 0x64, 0x63, 0x3D, 0x63, 0x6F, 0x6D,
+        0x30, 0x23, 0x04, 0x0B, 0x6F, 0x62, 0x6A, 0x65, 0x63, 0x74, 0x43, 0x6C, 0x61,
+        0x73, 0x73, 0x04, 0x14, 0x6F, 0x72, 0x67, 0x61, 0x6E, 0x69, 0x7A, 0x61, 0x74,
+        0x69, 0x6F, 0x6E, 0x61, 0x6C, 0x50, 0x65, 0x72, 0x73, 0x6F, 0x6E);
+
+is-deeply ASN::Serializer.serialize($compare-req), $compare-req-ber, "Compare request is serialized";
+
+is-deeply $parser.parse($compare-req-ber), $compare-req, "Compare request is parsed";
+
+# Compare response
+
+#value LDAPMessage ::= {
+#    messageID 5,
+#    protocolOp compareResponse : {
+#        resultCode compareTrue,
+#        matchedDN '666F6F'H,
+#        errorMessage ''H
+#    }
+#}
+
+my $compare-response = Cro::LDAP::Message.new(
+        message-id => 5,
+        protocol-op => ProtocolChoice.new((compareResponse => Cro::LDAP::Response::Compare.new(
+                result-code => compareTrue,
+                matched-dn => "foo",
+                error-message => "")))
+        );
+
+my $compare-response-ber = Buf.new(0x30, 0x0F, 0x02, 0x01, 0x05, 0x6F, 0x0A, 0x0A, 0x01, 0x06, 0x04, 0x03, 0x66, 0x6F, 0x6F, 0x04, 0x00);
+
+is-deeply ASN::Serializer.serialize($compare-response), $compare-response-ber, "Compare response is serialized";
+
+is-deeply $parser.parse($compare-response-ber), $compare-response, "Compare response is parsed";
+
 # Abandon request
 
 #value LDAPMessage ::= {

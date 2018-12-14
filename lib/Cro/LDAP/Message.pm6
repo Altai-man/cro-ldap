@@ -18,6 +18,10 @@ class ProtocolChoice does ASNChoice {
         addResponse => Cro::LDAP::Response::Add,
         delRequest => Cro::LDAP::Request::Del,
         delResponse => Cro::LDAP::Response::Del,
+        modDNRequest => Cro::LDAP::Request::ModifyDN,
+        modDNResponse => Cro::LDAP::Response::ModifyDN,
+        compareRequest => Cro::LDAP::Request::Compare,
+        compareResponse => Cro::LDAP::Response::Compare,
         abandonRequest => Cro::LDAP::Request::Abandon }
     }
 }
