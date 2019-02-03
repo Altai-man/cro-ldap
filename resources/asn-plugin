@@ -1,0 +1,10 @@
+if $symbol-name eq 'SearchResRef' {
+    my $type = Metamodel::ClassHOW.new_type(name => 'SearchResultReference'); # class SearchResultReference
+    $type.^add_role(Positional[ASN::Types::OctetString]); # does Positional[ASN::Types::OctetString] {
+    $type.^add_attribute(Attribute.new(name => '@!urls', type => Any, package => $type, :has_accessor)); # has @.urls;
+    $type.^add_method('ASN-tag-value', my method ASN-tag-value($type:) { 19 }); # method ASN-tag-value { 19 }
+    $type.^compose; # }
+    ('SET OF', $type)
+} else {
+    Nil;
+}

@@ -1,6 +1,6 @@
-use Cro::Transform;
 use Cro::TCP;
-use Cro::LDAP::Message;
+use Cro::Transform;
+use Cro::LDAP::Types;
 use Cro::LDAP::GenericParser;
 
 class Cro::LDAP::ResponseParser does Cro::Transform is Cro::LDAP::GenericParser {

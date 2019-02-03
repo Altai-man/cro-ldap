@@ -1,8 +1,7 @@
-use Cro::Transform;
-use Cro::LDAP::Message;
-use Cro::LDAP::Response;
 use ASN::Serializer;
 use Cro::TCP;
+use Cro::Transform;
+use Cro::LDAP::Types;
 
 class Cro::LDAP::ResponseSerializer does Cro::Transform {
     has atomicint $!message-counter = 0;
@@ -22,12 +21,12 @@ class Cro::LDAP::ResponseSerializer does Cro::Transform {
         }
     }
 
-    my %response-types = 'Cro::LDAP::Response::Bind' => 'bindResponse';
+    my %response-types = 'BindResponse' => 'bindResponse';
 
     method !wrap($response) {
         my $message-id = $!message-counter ⚛+= 2;
         Cro::LDAP::Message.new(
                 :$message-id,
-                protocol-op => ProtocolChoice.new((%response-types{$response.^name} => $response)));
+                protocol-op => ProtocolOp.new((%response-types{$response.^name} => $response)));
     }
 }

@@ -1,10 +1,7 @@
-use Cro::LDAP::Authentication;
-use Cro::LDAP::Message;
-use Cro::LDAP::Request;
-use Cro::LDAP::Response;
 use ASN::Serializer;
 use ASN::Parser;
 use ASN::Types;
+use Cro::LDAP::Types;
 use Test;
 
 my $parser = ASN::Parser.new(type => Cro::LDAP::Message);
@@ -30,8 +27,9 @@ my $request-with-controls-ber = Buf.new(
 
 my $request-with-controls = Cro::LDAP::Message.new(
         message-id => 5,
-        protocol-op => ProtocolChoice.new((abandonRequest => Cro::LDAP::Request::Abandon.new(7))),
-        controls => (Control.new(control-type => "Foo", criticality => True),
+        protocol-op => ProtocolOp.new((abandonRequest => AbandonRequest.new(7))),
+        controls => Array[Control].new(
+                Control.new(control-type => "Foo", criticality => True),
                 Control.new(control-type => "Bar", control-value => "Lost In Time"))
         );
 
@@ -58,10 +56,10 @@ my $bind-request-ber = Buf.new(
 
 my $bind-request = Cro::LDAP::Message.new(
         message-id => 1,
-        protocol-op => ProtocolChoice.new(('bindRequest' => Cro::LDAP::Request::Bind.new(
+        protocol-op => ProtocolOp.new(('bindRequest' => BindRequest.new(
                 version => 3,
                 name =>"dd=example,dc=com",
-                authentication => AuthChoice.new((simple => ASN::Types::OctetString.new("Foo"))))
+                authentication => AuthenticationChoice.new((simple => ASN::Types::OctetString.new("Foo"))))
         )));
 
 is-deeply ASN::Serializer.serialize($bind-request, :mode(Implicit)), $bind-request-ber, "Bind request is serialized";
@@ -81,7 +79,7 @@ is-deeply $parser.parse($bind-request-ber), $bind-request, "Bind request is pars
 
 my $bind-response = Cro::LDAP::Message.new(
         message-id => 2,
-        protocol-op => ProtocolChoice.new((bindResponse => Cro::LDAP::Response::Bind.new(
+        protocol-op => ProtocolOp.new((bindResponse => BindResponse.new(
                 result-code => success,
                 matched-dn => "",
                 error-message => "")
@@ -103,7 +101,7 @@ is-deeply $parser.parse($bind-response-ber), $bind-response, "Bind response is p
 
 my $unbind-request = Cro::LDAP::Message.new(
         message-id => 5,
-        protocol-op => ProtocolChoice.new((unbindRequest => Cro::LDAP::Request::Unbind.new)));
+        protocol-op => ProtocolOp.new((unbindRequest => UnbindRequest.new)));
 
 my $unbind-request-ber = Buf.new(0x30, 0x05, 0x02, 0x01, 0x05, 0x42, 0x00);
 
@@ -132,20 +130,21 @@ is-deeply $parser.parse($unbind-request-ber), $unbind-request, "Unbind request i
 
 my $search-request = Cro::LDAP::Message.new(
         message-id => 5,
-        protocol-op => ProtocolChoice.new((searchRequest => Cro::LDAP::Request::Search.new(
+        protocol-op => ProtocolOp.new((searchRequest => SearchRequest.new(
                 base-object => "dc=example,dc=com",
-                scope => WholeSubtree,
-                deref-aliases => NeverDerefAliases,
+                scope => wholeSubtree,
+                deref-aliases => neverDerefAliases,
                 size-limit => 0,
                 time-limit => 0,
                 types-only => False,
                 filter => Filter.new((equalityMatch =>
-                        AttributeValueAssertion.new(
+                        EqualityMatch.new(
                                 attribute-desc  => "objectClass",
                                 assertion-value => "organizationalPerson")
                 )),
-                attributes => ("dn", "cn")
-                ))));
+                attributes => Array[Str]("dn", "cn")
+                )))
+        );
 
 my $search-request-ber = Buf.new(
         0x30, 0x56, 0x02, 0x01, 0x05, 0x63, 0x51, 0x04, 0x11, 0x64, 0x63, 0x3D, 0x65, 0x78, 0x61,
@@ -215,13 +214,13 @@ my $search-result-entry-ber4 = Buf.new(
 
 my $search-result-entry = Cro::LDAP::Message.new(
         message-id => 50,
-        protocol-op => ProtocolChoice.new((searchResEntry =>
-                Cro::LDAP::Response::SearchEntry.new(
+        protocol-op => ProtocolOp.new((searchResEntry =>
+                SearchResultEntry.new(
                         object-name => "testDN",
-                        attributes => [
-                            PartialAttribute.new(type => "first", vals => ("Epsilon", "Solution")),
-                            PartialAttribute.new(type => "second", vals => ("Gamma", "Narberal"))
-                        ])
+                        attributes => Array[PartialAttributeListBottom].new(
+                                PartialAttributeListBottom.new(type => "first", vals => ASNSetOf[ASN::Types::OctetString].new("Epsilon", "Solution")),
+                                PartialAttributeListBottom.new(type => "second", vals => ASNSetOf[ASN::Types::OctetString].new("Gamma", "Narberal"))
+                                ))
         )));
 
 my $serialized-result-entry = ASN::Serializer.serialize($search-result-entry);
@@ -235,7 +234,7 @@ my $parsed-search-result-entry = $parser.parse($search-result-entry-ber3);
 subtest {
     ok $parsed-search-result-entry.message-id == 50;
     my $value = $parsed-search-result-entry.protocol-op.ASN-value.value;
-    ok $value ~~ Cro::LDAP::Response::SearchEntry;
+    ok $value ~~ SearchResultEntry;
     ok $value.object-name eq "testDN";
     ok $value.attributes[0].type eq "first";
     ok $value.attributes[0].vals.keys.Set eqv set ("Epsilon", "Solution");
@@ -256,7 +255,7 @@ subtest {
 
 my $search-result-done = Cro::LDAP::Message.new(
         message-id => 5,
-        protocol-op => ProtocolChoice.new((searchResDone => Cro::LDAP::Response::SearchDone.new(
+        protocol-op => ProtocolOp.new((searchResDone => SearchResultDone.new(
                 result-code => success,
                 matched-dn => "foo",
                 error-message => "")))
@@ -282,30 +281,30 @@ is-deeply $parser.parse($search-result-done-ber), $search-result-done, "Search r
 
 my $search-result-reference = Cro::LDAP::Message.new(
         message-id => 5,
-        protocol-op => ProtocolChoice.new((searchResRef => Cro::LDAP::Response::SearchRef.new(
-                ("ldap://hostb/OU=People,DC=Example,DC=NET??sub",
-                 "ldap://hostf/OU=Consultants,OU=People,DC=Example,DC=NET??sub")
+        protocol-op => ProtocolOp.new((searchResRef => SearchResultReference.new(
+                urls => ["ldap://hostb/OU=People,DC=Example,DC=NET??sub",
+                "ldap://hostf/OU=Consultants,OU=People,DC=Example,DC=NET??sub"]
             )
         )
     )
 );
 
-my $search-result-reference-ber = Buf.new(
-        0x30, 0x72, 0x02, 0x01, 0x05, 0x73, 0x6D, 0x04, 0x2D, 0x6C, 0x64,
-        0x61, 0x70, 0x3A, 0x2F, 0x2F, 0x68, 0x6F, 0x73, 0x74, 0x62, 0x2F,
-        0x4F, 0x55, 0x3D, 0x50, 0x65, 0x6F, 0x70, 0x6C, 0x65, 0x2C, 0x44,
-        0x43, 0x3D, 0x45, 0x78, 0x61, 0x6D, 0x70, 0x6C, 0x65, 0x2C, 0x44,
-        0x43, 0x3D, 0x4E, 0x45, 0x54, 0x3F, 0x3F, 0x73, 0x75, 0x62, 0x04,
-        0x3C, 0x6C, 0x64, 0x61, 0x70, 0x3A, 0x2F, 0x2F, 0x68, 0x6F, 0x73,
-        0x74, 0x66, 0x2F, 0x4F, 0x55, 0x3D, 0x43, 0x6F, 0x6E, 0x73, 0x75,
-        0x6C, 0x74, 0x61, 0x6E, 0x74, 0x73, 0x2C, 0x4F, 0x55, 0x3D, 0x50,
-        0x65, 0x6F, 0x70, 0x6C, 0x65, 0x2C, 0x44, 0x43, 0x3D, 0x45, 0x78,
-        0x61, 0x6D, 0x70, 0x6C, 0x65, 0x2C, 0x44, 0x43, 0x3D, 0x4E, 0x45,
-        0x54, 0x3F, 0x3F, 0x73, 0x75, 0x62);
-
-is-deeply ASN::Serializer.serialize($search-result-reference), $search-result-reference-ber, "Search result reference is serialized";
-
-is-deeply $parser.parse($search-result-reference-ber), $search-result-reference, "Search result reference is parsed";
+#my $search-result-reference-ber = Buf.new(
+#        0x30, 0x72, 0x02, 0x01, 0x05, 0x73, 0x6D, 0x04, 0x2D, 0x6C, 0x64,
+#        0x61, 0x70, 0x3A, 0x2F, 0x2F, 0x68, 0x6F, 0x73, 0x74, 0x62, 0x2F,
+#        0x4F, 0x55, 0x3D, 0x50, 0x65, 0x6F, 0x70, 0x6C, 0x65, 0x2C, 0x44,
+#        0x43, 0x3D, 0x45, 0x78, 0x61, 0x6D, 0x70, 0x6C, 0x65, 0x2C, 0x44,
+#        0x43, 0x3D, 0x4E, 0x45, 0x54, 0x3F, 0x3F, 0x73, 0x75, 0x62, 0x04,
+#        0x3C, 0x6C, 0x64, 0x61, 0x70, 0x3A, 0x2F, 0x2F, 0x68, 0x6F, 0x73,
+#        0x74, 0x66, 0x2F, 0x4F, 0x55, 0x3D, 0x43, 0x6F, 0x6E, 0x73, 0x75,
+#        0x6C, 0x74, 0x61, 0x6E, 0x74, 0x73, 0x2C, 0x4F, 0x55, 0x3D, 0x50,
+#        0x65, 0x6F, 0x70, 0x6C, 0x65, 0x2C, 0x44, 0x43, 0x3D, 0x45, 0x78,
+#        0x61, 0x6D, 0x70, 0x6C, 0x65, 0x2C, 0x44, 0x43, 0x3D, 0x4E, 0x45,
+#        0x54, 0x3F, 0x3F, 0x73, 0x75, 0x62);
+#
+#is-deeply ASN::Serializer.serialize($search-result-reference), $search-result-reference-ber, "Search result reference is serialized";
+#
+#is-deeply $parser.parse($search-result-reference-ber), $search-result-reference, "Search result reference is parsed";
 
 # Modify request
 
@@ -328,11 +327,11 @@ is-deeply $parser.parse($search-result-reference-ber), $search-result-reference,
 
 my $modify-req = Cro::LDAP::Message.new(
         message-id => 5,
-        protocol-op => ProtocolChoice.new((modifyRequest => Cro::LDAP::Request::Modify.new(
+        protocol-op => ProtocolOp.new((modifyRequest => ModifyRequest.new(
                 object => "dc=example,dc=com",
-                modification => (
-                    ModifyOp.new(:operation(ADD), modification => AttributeTypeAndValues.new(type => "type", vals => ['value'])),
-                    ModifyOp.new(:operation(DELETE), modification => AttributeTypeAndValues.new(type => "type", vals => ['value']))
+                modification => Array[ModificationBottom].new(
+                        ModificationBottom.new(:operation(add), modification => AttributeTypeAndValues.new(type => "type", vals => ASNSetOf[ASN::Types::OctetString].new('value'))),
+                        ModificationBottom.new(:operation(delete), modification => AttributeTypeAndValues.new(type => "type", vals => ASNSetOf[ASN::Types::OctetString].new('value')))
                 )
             )
         )
@@ -365,7 +364,7 @@ is-deeply $parser.parse($modify-req-ber), $modify-req, "Modify result is parsed"
 
 my $modify-response = Cro::LDAP::Message.new(
         message-id => 5,
-        protocol-op => ProtocolChoice.new((modifyResponse => Cro::LDAP::Response::Modify.new(
+        protocol-op => ProtocolOp.new((modifyResponse => ModifyResponse.new(
                 result-code => operationsError,
                 matched-dn => "foo",
                 error-message => "No such object")))
@@ -395,11 +394,11 @@ is-deeply $parser.parse($modify-response-ber), $modify-response, "Modify respons
 
 my $add-req = Cro::LDAP::Message.new(
         message-id => 5,
-        protocol-op => ProtocolChoice.new((addRequest => Cro::LDAP::Request::Add.new(
+        protocol-op => ProtocolOp.new((addRequest => AddRequest.new(
                 entry => "dc=example,dc=com",
-                attributes => (
-                    AttributeTypeAndValues.new(type => "type", vals => ['value']),
-                    AttributeTypeAndValues.new(type => "type", vals => ['value'])
+                attributes => Array[AttributeListBottom].new(
+                        AttributeListBottom.new(type => "type", vals => ASNSetOf[ASN::Types::OctetString].new('value')),
+                        AttributeListBottom.new(type => "type", vals => ASNSetOf[ASN::Types::OctetString].new('value'))
                 )
             )
         )
@@ -431,7 +430,7 @@ is-deeply $parser.parse($add-req-ber), $add-req, "Add request is parsed";
 
 my $add-response = Cro::LDAP::Message.new(
         message-id => 5,
-        protocol-op => ProtocolChoice.new((addResponse => Cro::LDAP::Response::Add.new(
+        protocol-op => ProtocolOp.new((addResponse => AddResponse.new(
                 result-code => operationsError,
                 matched-dn => "foo",
                 error-message => "No space left")))
@@ -455,7 +454,7 @@ is-deeply $parser.parse($add-response-ber), $add-response, "Add response is pars
 
 my $del-req = Cro::LDAP::Message.new(
         message-id => 5,
-        protocol-op => ProtocolChoice.new((delRequest => Cro::LDAP::Request::Del.new("dc=com")))
+        protocol-op => ProtocolOp.new((delRequest => DelRequest.new("dc=com")))
 );
 
 my $del-req-ber = Buf.new(0x30, 0x0B, 0x02, 0x01, 0x05, 0x4A, 0x06, 0x64, 0x63, 0x3D, 0x63, 0x6F, 0x6D);
@@ -477,7 +476,7 @@ is-deeply $parser.parse($del-req-ber), $del-req, "Del request is parsed";
 
 my $del-response = Cro::LDAP::Message.new(
         message-id => 5,
-        protocol-op => ProtocolChoice.new((delResponse => Cro::LDAP::Response::Del.new(
+        protocol-op => ProtocolOp.new((delResponse => DelResponse.new(
                 result-code => success,
                 matched-dn => "foo",
                 error-message => "")))
@@ -503,10 +502,10 @@ is-deeply $parser.parse($del-response-ber), $del-response, "Del response is pars
 
 my $mod-dn-req = Cro::LDAP::Message.new(
         message-id => 5,
-        protocol-op => ProtocolChoice.new((modDNRequest => Cro::LDAP::Request::ModifyDN.new(
+        protocol-op => ProtocolOp.new((modDNRequest => ModifyDNRequest.new(
                 entry => "dn=foo",
-                new-rdn => "dn=boo",
-                :delete-old-rdn,
+                newrdn => "dn=boo",
+                :deleteoldrdn,
                 new-superior => 'superior'
             )
         )
@@ -535,7 +534,7 @@ is-deeply $parser.parse($mod-dn-req-ber), $mod-dn-req, "Modify DN request is par
 
 my $mod-dn-response = Cro::LDAP::Message.new(
         message-id => 5,
-        protocol-op => ProtocolChoice.new((modDNResponse => Cro::LDAP::Response::ModifyDN.new(
+        protocol-op => ProtocolOp.new((modDNResponse => ModifyDNResponse.new(
                 result-code => success,
                 matched-dn => "foo",
                 error-message => "")))
@@ -562,7 +561,7 @@ is-deeply $parser.parse($mod-dn-response-ber), $mod-dn-response, "Mod DN respons
 
 my $compare-req = Cro::LDAP::Message.new(
         message-id => 5,
-        protocol-op => ProtocolChoice.new((compareRequest => Cro::LDAP::Request::Compare.new(
+        protocol-op => ProtocolOp.new((compareRequest => CompareRequest.new(
                 entry => "dc=example,dc=com",
                 ava => AttributeValueAssertion.new(
                         attribute-desc  => "objectClass",
@@ -578,6 +577,7 @@ my $compare-req-ber = Buf.new(
         0x30, 0x23, 0x04, 0x0B, 0x6F, 0x62, 0x6A, 0x65, 0x63, 0x74, 0x43, 0x6C, 0x61,
         0x73, 0x73, 0x04, 0x14, 0x6F, 0x72, 0x67, 0x61, 0x6E, 0x69, 0x7A, 0x61, 0x74,
         0x69, 0x6F, 0x6E, 0x61, 0x6C, 0x50, 0x65, 0x72, 0x73, 0x6F, 0x6E);
+
 
 is-deeply ASN::Serializer.serialize($compare-req), $compare-req-ber, "Compare request is serialized";
 
@@ -596,7 +596,7 @@ is-deeply $parser.parse($compare-req-ber), $compare-req, "Compare request is par
 
 my $compare-response = Cro::LDAP::Message.new(
         message-id => 5,
-        protocol-op => ProtocolChoice.new((compareResponse => Cro::LDAP::Response::Compare.new(
+        protocol-op => ProtocolOp.new((compareResponse => CompareResponse.new(
                 result-code => compareTrue,
                 matched-dn => "foo",
                 error-message => "")))
@@ -617,7 +617,7 @@ is-deeply $parser.parse($compare-response-ber), $compare-response, "Compare resp
 
 my $abandon-request = Cro::LDAP::Message.new(
         message-id => 5,
-        protocol-op => ProtocolChoice.new((abandonRequest => Cro::LDAP::Request::Abandon.new(7)))
+        protocol-op => ProtocolOp.new((abandonRequest => AbandonRequest.new(7)))
         );
 
 my $abandon-request-ber = Buf.new(0x30, 0x06, 0x02, 0x01, 0x05, 0x50, 0x01, 0x07);

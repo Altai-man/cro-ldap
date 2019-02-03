@@ -1,7 +1,7 @@
-use Cro::TCP;
-use Cro::LDAP::Message;
-use Cro::Transform;
 use ASN::Serializer;
+use Cro::TCP;
+use Cro::Transform;
+use Cro::LDAP::Types;
 
 class Cro::LDAP::RequestSerializer does Cro::Transform {
     method consumes() { Cro::LDAP::Message }

@@ -1,15 +1,13 @@
-use Cro::LDAP::Message;
-use Cro::LDAP::Request;
-use Cro::LDAP::Response;
+use Cro::LDAP::Types;
 
 role Cro::LDAP::Worker {
-    method bind(Cro::LDAP::Request::Bind $req --> Cro::LDAP::Response::Bind) {...}
+    method bind($req --> BindResponse) {...}
 
-    method accept(Cro::LDAP::Message $request --> Cro::LDAP::Response) {
+    method accept(Cro::LDAP::Message $request) {
         my $op = $request.protocol-op.ASN-value;
         given $op.value {
-            when Cro::LDAP::Request::Bind {
-                self.bind($op.value);
+            when BindRequest {
+                self.bind($_);
             }
             default {
                 die "Not yet implemented message is sent: $op.key()";

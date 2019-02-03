@@ -1,6 +1,5 @@
 use ASN::Types;
-use Cro::LDAP::Message;
-use Cro::LDAP::Request;
+use Cro::LDAP::Types;
 use Cro::LDAP::RequestSerializer;
 use Cro::LDAP::ResponseParser;
 
@@ -53,22 +52,22 @@ class Cro::LDAP::Client {
 
     method bind(Str $name, :$simple, :$sasl) {
         Promise(supply {
-            my $message = Cro::LDAP::Request::Bind.new(
+            my $message = BindRequest.new(
                     version => 3,
                     name => "64643D6578616D706C652C64633D636F6D",
-                    authentication => AuthChoice.new((simple => ASN::Types::OctetString.new("466F6F"))));
+                    authentication => AuthenticationChoice.new((simple => ASN::Types::OctetString.new("466F6F"))));
             whenever $!pipeline.send-request(self!wrap($message)) {
                 emit $_;
             }
         });
     }
 
-    my %request-types = 'Cro::LDAP::Request::Bind' => 'bindRequest';
+    my %request-types = 'BindRequest' => 'bindRequest';
 
     method !wrap($request) {
         my $message-id = $!message-counter ⚛+= 2;
         Cro::LDAP::Message.new(
                 :$message-id,
-                protocol-op => ProtocolChoice.new((%request-types{$request.^name} => $request)));
+                protocol-op => ProtocolOp.new((%request-types{$request.^name} => $request)));
     }
 }
