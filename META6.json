@@ -1,6 +1,6 @@
 {
     "license": "Artistic-2.0",
-    "source-url": "https://github.com/croservices/cro-ldap.git",
+    "source-url": "https://github.com/Altai-man/cro-ldap.git",
     "depends": [
         "Cro::Core",
         "ASN::BER"
