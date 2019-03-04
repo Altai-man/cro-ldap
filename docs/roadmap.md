@@ -1,8 +1,20 @@
 ### Roadmap
 
+- [ ] Overview Directory Information Model RFC ([RFC 5412](https://tools.ietf.org/pdf/rfc4512.pdf))
+- [ ] Implement LDAP URL ([RFC 4516](https://tools.ietf.org/pdf/rfc4516.pdf))
+- [ ] Implement DN ([RFC 4514](https://tools.ietf.org/pdf/rfc4514.pdf))
+- [ ] [ASN.1] Recursive schema implementation
+- [ ] Implement search filters ([RFC 4515](https://tools.ietf.org/pdf/rfc4515.pdf))
+
+##### Authentication
+
+- [ ] Ensure anonymous authentication ([RFC 4513](https://tools.ietf.org/pdf/rfc4513.pdf), 5.1.1)
+- [ ] Ensure simple name/password ([RFC 4513](https://tools.ietf.org/pdf/rfc4513.pdf), 5.1.3)
+- [ ] * StartTLS operation ([RFC 4513](https://tools.ietf.org/pdf/rfc4513.pdf), 3)
+- [ ] * SASL EXTERNAL ([RFC 4513](https://tools.ietf.org/pdf/rfc4513.pdf), 5.2.3)
+
 ##### Connection handling
 
-- [ ] *ASN* Unify index and length handling
 - [ ] Bad request - return a Notice of Disconnection with resultCode set to protocolError, and terminate session
   - [ ] SEQUENCE tag is not recognized
   - [ ] messageID cannot be parsed
@@ -18,28 +30,16 @@
 
 ##### Messages
 
-- [x] Unbind request
+- [ ] Bind
+- [ ] Add
+- [ ] Delete
+- [ ] Compare
+- [ ] ModDN
+- [ ] Modify
+- [ ] Search
+- [ ] Unbind
+- [ ] Ext
 
-- [x] Search request
-- [x] Search result entry
-- [x] Search result done
-- [x] Search result reference
+##### Misc
 
-- [x] Modify request
-- [x] Modify response
-
-- [x] Add request
-- [x] Add Response
-
-- [x] Delete request
-- [x] Delete response
-
-- [x] Modify DN request
-- [x] Modify DN response
-
-- [x] Compare Operation
-- [x] Compare Response
-
-- [x] Abandon request
-
-- [ ] Unsolicited Notification - a message from server to client about some special conditions
+- [ ] Cleanup mess in `Types`
