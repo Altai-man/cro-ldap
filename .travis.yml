@@ -1,0 +1,10 @@
+language: perl6
+
+perl6:
+    - '2018.12'
+    - '2019.03'
+    - latest
+
+install:
+    - rakudobrew build-zef
+    - zef install .
