@@ -7,7 +7,8 @@ role Cro::LDAP::Worker {
         my $op = $request.protocol-op.ASN-value;
         given $op.value {
             when BindRequest {
-                self.bind($_);
+                my $res = self.bind($_);
+                return bindResponse => $res;
             }
             default {
                 die "Not yet implemented message is sent: $op.key()";

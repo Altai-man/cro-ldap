@@ -16,7 +16,9 @@ class Cro::LDAP::Server does Cro::Service {
         method transformer($request-stream) {
             supply {
                 whenever $request-stream -> $request {
-                    emit $!server.accept($request);
+                    emit Cro::LDAP::Message.new(
+                            message-id => $request.message-id,
+                            protocol-op => ProtocolOp.new($!server.accept($request)));
                 }
             }
         }

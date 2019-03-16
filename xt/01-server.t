@@ -10,17 +10,16 @@ constant $port = 2000;
 
 class MockLDAPWorker does Cro::LDAP::Worker {
     method bind($req --> BindResponse) {
-        note $req;
         return BindResponse.new(
                 result-code => success,
                 matched-dn => "",
                 error-message => "");
     }
 
-#    method search($req --> SearchResponse) {
-#        note $req;
-#        die;
-#    }
+    method search($req --> SearchResponse) {
+        note $req;
+        die;
+    }
 }
 
 my Cro::Service $server = Cro::LDAP::Server.new(
