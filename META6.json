@@ -16,6 +16,7 @@
         "Cro::LDAP::Types": "lib/Cro/LDAP/Types.pm6",
         "Cro::LDAP::ResponseParser": "lib/Cro/LDAP/ResponseParser.pm6",
         "Cro::LDAP::RequestParser": "lib/Cro/LDAP/RequestParser.pm6",
+        "Cro::LDAP::URL": "lib/Cro/LDAP/URL.pm6",
         "Cro::LDAP::Server": "lib/Cro/LDAP/Server.pm6"
     },
     "name": "Cro::LDAP",
