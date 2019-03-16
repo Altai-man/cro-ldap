@@ -3,7 +3,8 @@
     "source-url": "https://github.com/Altai-man/cro-ldap.git",
     "depends": [
         "Cro::Core",
-        "ASN::BER"
+        "ASN::BER",
+        "ASN::META"
     ],
     "auth": "github:Altai-man",
     "provides": {
