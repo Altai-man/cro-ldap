@@ -5,7 +5,7 @@ use Cro::LDAP::ResponseParser;
 
 class Cro::LDAP::Client {
     has IO::Socket::Async $!socket;
-    has atomicint $!message-counter = -1;
+    has atomicint $!message-counter = 1;
 
     my class Pipeline {
         has Supplier $!in;
@@ -50,12 +50,14 @@ class Cro::LDAP::Client {
         });
     }
 
-    method bind(Str $name, :$simple, :$sasl) {
+    method bind(Str $name, :$auth) {
         Promise(supply {
+            my $authentication = AuthenticationChoice.new($auth ~~ Str ??
+                    simple => ASN::Types::OctetString.new($auth) !!
+                    sasl => SaslCredentials.new(|$auth));
             my $message = BindRequest.new(
-                    version => 3,
-                    name => "64643D6578616D706C652C64633D636F6D",
-                    authentication => AuthenticationChoice.new((simple => ASN::Types::OctetString.new("466F6F"))));
+                    version => 3,:$name,
+                    :$authentication);
             whenever $!pipeline.send-request(self!wrap($message)) {
                 emit $_;
             }
@@ -65,7 +67,7 @@ class Cro::LDAP::Client {
     my %request-types = 'BindRequest' => 'bindRequest';
 
     method !wrap($request) {
-        my $message-id = $!message-counter ⚛+= 2;
+        my $message-id = $!message-counter⚛++;
         Cro::LDAP::Message.new(
                 :$message-id,
                 protocol-op => ProtocolOp.new((%request-types{$request.^name} => $request)));

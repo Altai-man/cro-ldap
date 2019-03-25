@@ -1,19 +1,26 @@
+use ASN::Types;
 use Cro::LDAP::Client;
+use Cro::LDAP::Worker;
 use Cro::LDAP::Server;
 use Cro::LDAP::Types;
-use Cro::LDAP::Worker;
 use Test;
 
 plan *;
 
+my Int $checks = 0;
+
 class MockLDAPWorker does Cro::LDAP::Worker {
     method bind($req --> BindResponse) {
+        is $req.name, "cn=manager,o=it,c=eu", "Bind DN is correct";
+        is $req.authentication.value.value, "secret", "Password is correct";
+
         return BindResponse.new(
                 result-code => success,
                 matched-dn => "",
                 error-message => "");
     }
     method unbind($req) {}
+
     method search($req) {
         emit (searchResDone => SearchResultDone.new(
                 result-code => success,
@@ -33,7 +40,7 @@ my $client = Cro::LDAP::Client.new;
 
 await $client.connect('localhost', 20000);
 # "Foo" name, simple authentication used
-given await $client.bind("Foo") -> $resp {
+given await $client.bind("cn=manager,o=it,c=eu", auth => "secret") -> $resp {
     ok $resp ~~ BindResponse, 'Got Response::Bind object';
 }
 

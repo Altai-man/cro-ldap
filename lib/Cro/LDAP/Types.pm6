@@ -27,6 +27,7 @@ $map.push: (delete => delete);
 $map.push: (AttributeTypeAndValues => AttributeTypeAndValues);
 $map.push: (Modification => Modification);
 $map.push: (ModificationBottom => ModificationBottom);
+$map.push: (SaslCredentials => SaslCredentials);
 $map.push: (BindRequest => BindRequest);
 $map.push: (BindResponse => BindResponse);
 $map.push: (UnbindRequest => UnbindRequest);

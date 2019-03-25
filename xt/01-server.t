@@ -40,7 +40,7 @@ my Cro::Service $server = Cro::LDAP::Server.new(
         :$port);
 
 $server.start;
-END { $server.stop }
+END $server.stop;
 
 my @args = <ldapsearch -H ldap://localhost:2000/ -x -b "o=it-sudparis,c=eu" -D "cn=manager,o=it,c=eu" -w secret>;
 my $proc = Proc::Async.new(|@args);
