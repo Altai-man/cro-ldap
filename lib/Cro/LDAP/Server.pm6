@@ -16,9 +16,21 @@ class Cro::LDAP::Server does Cro::Service {
         method transformer($request-stream) {
             supply {
                 whenever $request-stream -> $request {
-                    emit Cro::LDAP::Message.new(
-                            message-id => $request.message-id,
-                            protocol-op => ProtocolOp.new($!server.accept($request)));
+                    my $resp = $!server.accept($request);
+
+                    next unless $resp;
+                    if $resp ~~ Supply {
+                        whenever $resp {
+                            emit Cro::LDAP::Message.new(
+                                    message-id => $request.message-id,
+                                    protocol-op => ProtocolOp.new($_));
+                        }
+                    } else {
+                        emit Cro::LDAP::Message.new(
+                                message-id => $request.message-id,
+                                protocol-op => ProtocolOp.new($resp));
+
+                    }
                 }
             }
         }
