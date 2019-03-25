@@ -39,7 +39,6 @@ END $server.stop;
 my $client = Cro::LDAP::Client.new;
 
 await $client.connect('localhost', 20000);
-# "Foo" name, simple authentication used
 given await $client.bind("cn=manager,o=it,c=eu", auth => "secret") -> $resp {
     ok $resp ~~ BindResponse, 'Got Response::Bind object';
 }
