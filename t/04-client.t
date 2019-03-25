@@ -7,8 +7,6 @@ use Test;
 
 plan *;
 
-my Int $checks = 0;
-
 class MockLDAPWorker does Cro::LDAP::Worker {
     method bind($req --> BindResponse) {
         is $req.name, "cn=manager,o=it,c=eu", "Bind DN is correct";
