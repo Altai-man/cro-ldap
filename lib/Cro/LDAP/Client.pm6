@@ -52,9 +52,14 @@ class Cro::LDAP::Client {
 
     method bind(Str $name, :$auth) {
         Promise(supply {
-            my $authentication = AuthenticationChoice.new($auth ~~ Str ??
-                    simple => ASN::Types::OctetString.new($auth) !!
-                    sasl => SaslCredentials.new(|$auth));
+            my $authentication;
+            with $auth {
+                $authentication = AuthenticationChoice.new($auth ~~ Str ??
+                        simple => ASN::Types::OctetString.new($auth) !!
+                        sasl => SaslCredentials.new(|$auth));
+            } else {
+                $authentication = AuthenticationChoice.new((simple => ASN::Types::OctetString.new("")));
+            }
             my $message = BindRequest.new(
                     version => 3,:$name,
                     :$authentication);
