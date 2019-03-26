@@ -69,12 +69,27 @@ class Cro::LDAP::Client {
         });
     }
 
-    my %request-types = 'BindRequest' => 'bindRequest';
+    method add($dn, @attributes) {
+        Promise(supply {
+            my $attributes = Array[AttributeListBottom].new;
+            for @attributes {
+                $attributes.push: AttributeListBottom.new(
+                        type => .key,
+                        vals => ASNSetOf[ASN::Types::OctetString].new(.value));
+            }
+            my $message = AddRequest.new(
+                    entry => $dn,
+                    :$attributes);
+            whenever $!pipeline.send-request(self!wrap($message)) {
+                emit $_;
+            }
+        })
+    }
 
     method !wrap($request) {
         my $message-id = $!message-counter⚛++;
         Cro::LDAP::Message.new(
                 :$message-id,
-                protocol-op => ProtocolOp.new((%request-types{$request.^name} => $request)));
+                protocol-op => ProtocolOp.new(($request.^name.subst(/(\w)/, *.lc, :1st) => $request)));
     }
 }

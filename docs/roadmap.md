@@ -30,7 +30,7 @@
 
 ##### Messages
 
-- [ ] Bind
+- [x] Bind
 - [ ] Add
 - [ ] Delete
 - [ ] Compare
