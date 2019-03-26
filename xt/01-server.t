@@ -8,6 +8,34 @@ plan *;
 
 constant $port = 2000;
 
+
+
+sub test-command($command, :@args, :@checks) {
+    my @base = <-H ldap://localhost:2000/ -x -D "cn=manager,o=it,c=eu" -w secret>;
+    my $proc = Proc::Async.new($command, |@base, |@args);
+    my $output = "";
+
+    react {
+        whenever $proc.stdout {
+            $output ~= $_;
+        }
+        whenever $proc.start {
+            done;
+        }
+
+        # Timeout
+        whenever Promise.in(5) {
+            done;
+        }
+    }
+
+    for @checks -> $check {
+        subtest {
+            ok $check($output);
+        }, "Test $command";
+    }
+}
+
 class MockLDAPWorker does Cro::LDAP::Worker {
     method bind($req --> BindResponse) {
         return BindResponse.new(
@@ -17,6 +45,13 @@ class MockLDAPWorker does Cro::LDAP::Worker {
     }
 
     method unbind($req) {
+    }
+
+    method add($req) {
+        return AddResponse.new(
+                result-code => success,
+                matched-dn => "",
+                error-message => "");
     }
 
     method search($req) {
@@ -42,28 +77,18 @@ my Cro::Service $server = Cro::LDAP::Server.new(
 $server.start;
 END $server.stop;
 
-my @args = <ldapsearch -H ldap://localhost:2000/ -x -b "o=it-sudparis,c=eu" -D "cn=manager,o=it,c=eu" -w secret>;
-my $proc = Proc::Async.new(|@args);
+my $proc;
+my @args = <-H ldap://localhost:2000/ -x -D "cn=manager,o=it,c=eu" -w secret>;
 
-my $search-res = Promise.new;
-my $search-num = Promise.new;
-my $search-object = Promise.new;
+test-command("ldapsearch",
+        args => <-b o=it-sudparis,c=eu>,
+        checks => [* ~~ /'result: 0 Success'/,
+        * ~~ /'search: 2'/,
+        * ~~ /'first: Epsilon'/,
+        * ~~ /'second: Narberal'/]);
 
-react {
-    whenever $proc.stdout {
-        $search-res.keep if $_ ~~ /'result: 0 Success'/;
-        $search-num.keep if $_ ~~ /'search: 2'/;
-        $search-object.keep if $_ ~~ /'first: Epsilon'/ && $_ ~~ /'second: Narberal'/;
-    }
-    whenever $proc.start {
-        done
-    }
-}
-
-await Promise.allof($search-res, $search-num, $search-object);
-
-is $search-res.status, Kept, "Success code";
-is $search-num.status, Kept, "Correct number of results";
-is $search-object.status, Kept, "Attributes";
+test-command("ldapadd",
+        args => <-f xt/input-files/add.ldif>,
+        checks => [* ~~ /'adding new entry "uid=jsmith,ou=people,dc=example,dc=com'/]);
 
 done-testing;

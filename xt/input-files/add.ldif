@@ -1,0 +1,9 @@
+dn: uid=jsmith,ou=people,dc=example,dc=com
+objectclass: inetOrgPerson
+objectclass: person
+objectclass: top
+uid: jsmith
+sn: Smith
+givenname: John
+mail: jsmith@example.com
+cn: John Smith
