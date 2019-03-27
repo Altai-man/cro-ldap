@@ -43,13 +43,6 @@ END $server.stop;
 
 my @args = <-H ldap://localhost:2000/ -x -D "cn=manager,o=it,c=eu" -w secret>;
 
-test-command("ldapsearch",
-        args => <-b o=it-sudparis,c=eu>,
-        checks => [* ~~ /'result: 0 Success'/,
-        * ~~ /'search: 2'/,
-        * ~~ /'first: Epsilon'/,
-        * ~~ /'second: Narberal'/]);
-
 test-command("ldapadd",
         args => <-f xt/input-files/add.ldif>,
         checks => [* ~~ /'adding new entry "uid=jsmith,ou=people,dc=example,dc=com'/]);
@@ -57,5 +50,20 @@ test-command("ldapadd",
 test-command("ldapdelete",
         args => <"cn=Robert Jenkins,ou=People,dc=example,dc=com">,
         checks => [*.chars == 0]);
+
+# compare
+
+# ModDN
+
+# Modify
+
+test-command("ldapsearch",
+        args => <-b o=it-sudparis,c=eu>,
+        checks => [* ~~ /'result: 0 Success'/,
+        * ~~ /'search: 2'/,
+        * ~~ /'first: Epsilon'/,
+        * ~~ /'second: Narberal'/]);
+
+# Ext
 
 done-testing;
