@@ -1,38 +1,10 @@
-use ASN::Types;
+use Cro::LDAP::Test::MockServer;
 use Cro::LDAP::Client;
-use Cro::LDAP::Worker;
 use Cro::LDAP::Server;
 use Cro::LDAP::Types;
 use Test;
 
 plan *;
-
-class MockLDAPWorker does Cro::LDAP::Worker {
-    method bind($req --> BindResponse) {
-        is $req.name, "cn=manager,o=it,c=eu", "Bind DN is correct";
-        is $req.authentication.value.value, "secret", "Password is correct";
-
-        return BindResponse.new(
-                result-code => success,
-                matched-dn => "",
-                error-message => "");
-    }
-    method unbind($req) {}
-
-    method search($req) {
-        emit (searchResDone => SearchResultDone.new(
-                result-code => success,
-                matched-dn => "",
-                error-message => ""));
-    }
-
-    method add($req) {
-        return AddResponse.new(
-                result-code => success,
-                matched-dn => "",
-                error-message => "");
-    }
-}
 
 my Cro::Service $server = Cro::LDAP::Server.new(
         server => MockLDAPWorker.new,

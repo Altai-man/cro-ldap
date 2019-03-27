@@ -1,26 +1,10 @@
+use Cro::LDAP::Test::MockServer;
 use Cro::LDAP::Client;
 use Cro::LDAP::Server;
 use Cro::LDAP::Types;
-use Cro::LDAP::Worker;
 use Test;
 
 plan *;
-
-class MockLDAPWorker does Cro::LDAP::Worker {
-    method bind($req --> BindResponse) {
-        return BindResponse.new(
-                result-code => success,
-                matched-dn => "",
-                error-message => "");
-    }
-    method unbind($req) {}
-    method search($req) {
-        emit (searchResDone => SearchResultDone.new(
-                result-code => success,
-                matched-dn => "",
-                error-message => ""));
-    }
-}
 
 my Cro::Service $server = Cro::LDAP::Server.new(
         server => MockLDAPWorker.new,
