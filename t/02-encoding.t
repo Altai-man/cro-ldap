@@ -502,7 +502,7 @@ is-deeply $parser.parse($del-response-ber), $del-response, "Del response is pars
 
 my $mod-dn-req = Cro::LDAP::Message.new(
         message-id => 5,
-        protocol-op => ProtocolOp.new((modDNRequest => ModifyDNRequest.new(
+        protocol-op => ProtocolOp.new((modDNRequest => ModDNRequest.new(
                 entry => "dn=foo",
                 newrdn => "dn=boo",
                 :deleteoldrdn,
@@ -534,7 +534,7 @@ is-deeply $parser.parse($mod-dn-req-ber), $mod-dn-req, "Modify DN request is par
 
 my $mod-dn-response = Cro::LDAP::Message.new(
         message-id => 5,
-        protocol-op => ProtocolOp.new((modDNResponse => ModifyDNResponse.new(
+        protocol-op => ProtocolOp.new((modDNResponse => ModDNResponse.new(
                 result-code => success,
                 matched-dn => "foo",
                 error-message => "")))

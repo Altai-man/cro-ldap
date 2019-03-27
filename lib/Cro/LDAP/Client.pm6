@@ -50,24 +50,19 @@ class Cro::LDAP::Client {
         });
     }
 
-    method bind(Str $name, :$auth) {
-        self!wrap-response({
-            my $authentication;
-            with $auth {
-                $authentication = AuthenticationChoice.new($auth ~~ Str ??
-                        simple => ASN::Types::OctetString.new($auth) !!
-                        sasl => SaslCredentials.new(|$auth));
-            } else {
-                $authentication = AuthenticationChoice.new((simple => ASN::Types::OctetString.new("")));
-            }
+    method bind(Str $name, :$auth = "") {
+        self!wrap-request({
+            my $authentication = AuthenticationChoice.new($auth ~~ Str ??
+                    simple => ASN::Types::OctetString.new($auth) !!
+                    sasl => SaslCredentials.new(|$auth));
             BindRequest.new(
-                    version => 3,:$name,
+                    version => 3, :$name,
                     :$authentication);
         });
     }
 
     method add($dn, @attributes) {
-        self!wrap-response({
+        self!wrap-request({
             my $attributes = Array[AttributeListBottom].new;
             for @attributes {
                 $attributes.push: AttributeListBottom.new(
@@ -79,10 +74,24 @@ class Cro::LDAP::Client {
     }
 
     method delete($dn) {
-        self!wrap-response({ DelRequest.new($dn) });
+        self!wrap-request({ DelRequest.new($dn) });
     }
 
-    method !wrap-response(&make-message) {
+    method compare(:$entry!, :$ava!) {
+        self!wrap-request({ CompareRequest.new(:$entry, :$ava) });
+    }
+
+    method modDN(:$dn!, :$new-dn!, :$delete = True, :$new-superior) {
+        self!wrap-request({
+            ModDNRequest.new(
+                    entry => $dn,
+                    newrdn => $new-dn,
+                    deleteoldrdn => $delete,
+                    :$new-superior);
+        });
+    }
+
+    method !wrap-request(&make-message) {
         Promise(supply {
             my $message = make-message;
             whenever $!pipeline.send-request(self!wrap-with-envelope($message)) {

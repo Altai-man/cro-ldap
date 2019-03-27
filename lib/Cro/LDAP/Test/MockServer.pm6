@@ -4,7 +4,7 @@ use Cro::LDAP::Worker;
 
 class MockLDAPWorker does Cro::LDAP::Worker {
     method success-result($type) {
-        return $type.new(
+        $type.new(
                 result-code => success,
                 matched-dn => "",
                 error-message => "");
@@ -22,6 +22,17 @@ class MockLDAPWorker does Cro::LDAP::Worker {
 
     method delete($req) {
         self.success-result(DelResponse);
+    }
+
+    method compare($req) {
+        CompareResponse.new(
+                result-code => compareTrue,
+                matched-dn => "",
+                error-message => "");
+    }
+
+    method modDN($req) {
+        self.success-result(ModDNResponse);
     }
 
     method search($req) {

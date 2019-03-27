@@ -30,9 +30,24 @@ given await $client.delete("cn=Robert Jenkins,ou=People,dc=example,dc=com") -> $
     ok $resp ~~ DelResponse, 'Got Response::Del object';
 }
 
-# compare
+given await $client.compare(
+        entry => "uid=bjensen,ou=people,dc=example,dc=com",
+        ava => AttributeValueAssertion.new(
+                attribute-desc => "sn",
+                assertion-value => "smith"
+                )) -> $resp {
+    ok $resp ~~ CompareResponse, 'Got Response::Compare object';
+    is $resp.result-code, compareTrue, 'Correct response code';
+}
 
-# ModDN
+
+given await $client.modDN(
+        dn => "cn=Modify Me, o=University of Life, c=US",
+        new-dn => "cn=The New Me",
+        :delete,
+        new-superior => "cn=Robert Jenkins,ou=People,dc=example,dc=com") -> $resp {
+    ok $resp ~~ ModDNResponse, 'Got Response::ModDN object';
+}
 
 # Modify
 

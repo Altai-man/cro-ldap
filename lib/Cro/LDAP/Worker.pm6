@@ -6,6 +6,8 @@ role Cro::LDAP::Worker {
     method search($req --> Supply) {...}
     method add($req --> AddResponse) {...}
     method delete($req --> DelResponse) {...}
+    method compare($req --> CompareResponse) {...}
+    method modDN($req --> ModDNResponse) {...}
 
     method accept(Cro::LDAP::Message $request) {
         my $op = $request.protocol-op.ASN-value;
@@ -22,6 +24,12 @@ role Cro::LDAP::Worker {
             }
             when DelRequest {
                 delResponse => self.delete($_);
+            }
+            when CompareRequest {
+                compareResponse => self.compare($_);
+            }
+            when ModDNRequest {
+                modDNResponse => self.modDN($_);
             }
             when SearchRequest {
                 supply {

@@ -26,11 +26,11 @@ sub test-command($command, :@args, :@checks) {
         }
     }
 
-    for @checks -> $check {
-        subtest {
+    subtest {
+        for @checks -> $check {
             ok $check($output);
-        }, "Test $command";
-    }
+        }
+    }, "Test $command";
 }
 
 my Cro::Service $server = Cro::LDAP::Server.new(
@@ -52,8 +52,13 @@ test-command("ldapdelete",
         checks => [*.chars == 0]);
 
 # compare
+test-command("ldapcompare",
+        args => <uid=bjensen,ou=people,dc=example,dc=com sn:smith>,
+        checks => [* eq "TRUE\n"]);
 
-# ModDN
+test-command("ldapmodrdn",
+        args => ["-r", "-s", "cn=Robert Jenkins,ou=People,dc=example,dc=com", "cn=Modify Me, o=University of Life, c=US", "cn=The New Me"],
+        checks => [* eq ""]);
 
 # Modify
 
