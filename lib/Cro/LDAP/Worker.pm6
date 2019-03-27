@@ -5,6 +5,7 @@ role Cro::LDAP::Worker {
     method unbind($req) {...}
     method search($req --> Supply) {...}
     method add($req --> AddResponse) {...}
+    method delete($req --> DelResponse) {...}
 
     method accept(Cro::LDAP::Message $request) {
         my $op = $request.protocol-op.ASN-value;
@@ -18,6 +19,9 @@ role Cro::LDAP::Worker {
             }
             when AddRequest {
                 addResponse => self.add($_);
+            }
+            when DelRequest {
+                delResponse => self.delete($_);
             }
             when SearchRequest {
                 supply {

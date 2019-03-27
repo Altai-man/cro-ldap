@@ -8,8 +8,6 @@ plan *;
 
 constant $port = 2000;
 
-
-
 sub test-command($command, :@args, :@checks) {
     my @base = <-H ldap://localhost:2000/ -x -D "cn=manager,o=it,c=eu" -w secret>;
     my $proc = Proc::Async.new($command, |@base, |@args);
@@ -37,21 +35,25 @@ sub test-command($command, :@args, :@checks) {
 }
 
 class MockLDAPWorker does Cro::LDAP::Worker {
-    method bind($req --> BindResponse) {
-        return BindResponse.new(
+    method success-result($type) {
+        return $type.new(
                 result-code => success,
                 matched-dn => "",
                 error-message => "");
     }
 
-    method unbind($req) {
+    method bind($req --> BindResponse) {
+        self.success-result(BindResponse);
     }
+
+    method unbind($req) {}
 
     method add($req) {
-        return AddResponse.new(
-                result-code => success,
-                matched-dn => "",
-                error-message => "");
+        self.success-result(AddResponse);
+    }
+
+    method delete($req) {
+        self.success-result(DelResponse);
     }
 
     method search($req) {
@@ -77,7 +79,6 @@ my Cro::Service $server = Cro::LDAP::Server.new(
 $server.start;
 END $server.stop;
 
-my $proc;
 my @args = <-H ldap://localhost:2000/ -x -D "cn=manager,o=it,c=eu" -w secret>;
 
 test-command("ldapsearch",
@@ -90,5 +91,9 @@ test-command("ldapsearch",
 test-command("ldapadd",
         args => <-f xt/input-files/add.ldif>,
         checks => [* ~~ /'adding new entry "uid=jsmith,ou=people,dc=example,dc=com'/]);
+
+test-command("ldapdelete",
+        args => <"cn=Robert Jenkins,ou=People,dc=example,dc=com">,
+        checks => [*.chars == 0]);
 
 done-testing;

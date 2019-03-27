@@ -31,8 +31,8 @@
 ##### Messages
 
 - [x] Bind
-- [ ] Add
-- [ ] Delete
+- [x] Add
+- [x] Delete
 - [ ] Compare
 - [ ] ModDN
 - [ ] Modify
