@@ -26,7 +26,9 @@ given await $client.add("uid=jsmith,ou=people,dc=example,dc=com",
     ok $resp ~~ AddResponse, 'Got Response::Add object';
 }
 
-# delete
+given await $client.delete("cn=Robert Jenkins,ou=People,dc=example,dc=com") -> $resp {
+    ok $resp ~~ DelResponse, 'Got Response::Del object';
+}
 
 # compare
 

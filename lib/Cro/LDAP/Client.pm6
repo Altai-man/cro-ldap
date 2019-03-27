@@ -51,7 +51,7 @@ class Cro::LDAP::Client {
     }
 
     method bind(Str $name, :$auth) {
-        Promise(supply {
+        self!wrap-response({
             my $authentication;
             with $auth {
                 $authentication = AuthenticationChoice.new($auth ~~ Str ??
@@ -60,33 +60,38 @@ class Cro::LDAP::Client {
             } else {
                 $authentication = AuthenticationChoice.new((simple => ASN::Types::OctetString.new("")));
             }
-            my $message = BindRequest.new(
+            BindRequest.new(
                     version => 3,:$name,
                     :$authentication);
-            whenever $!pipeline.send-request(self!wrap($message)) {
-                emit $_;
-            }
         });
     }
 
     method add($dn, @attributes) {
-        Promise(supply {
+        self!wrap-response({
             my $attributes = Array[AttributeListBottom].new;
             for @attributes {
                 $attributes.push: AttributeListBottom.new(
                         type => .key,
                         vals => ASNSetOf[ASN::Types::OctetString].new(.value));
             }
-            my $message = AddRequest.new(
-                    entry => $dn,
-                    :$attributes);
-            whenever $!pipeline.send-request(self!wrap($message)) {
+            AddRequest.new(entry => $dn, :$attributes);
+        });
+    }
+
+    method delete($dn) {
+        self!wrap-response({ DelRequest.new($dn) });
+    }
+
+    method !wrap-response(&make-message) {
+        Promise(supply {
+            my $message = make-message;
+            whenever $!pipeline.send-request(self!wrap-with-envelope($message)) {
                 emit $_;
             }
         })
     }
 
-    method !wrap($request) {
+    method !wrap-with-envelope($request) {
         my $message-id = $!message-counter⚛++;
         Cro::LDAP::Message.new(
                 :$message-id,
