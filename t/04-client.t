@@ -31,7 +31,7 @@ given await $client.delete("cn=Robert Jenkins,ou=People,dc=example,dc=com") -> $
 }
 
 given await $client.compare(
-        entry => "uid=bjensen,ou=people,dc=example,dc=com",
+        "uid=bjensen,ou=people,dc=example,dc=com",
         ava => AttributeValueAssertion.new(
                 attribute-desc => "sn",
                 assertion-value => "smith"
@@ -40,6 +40,12 @@ given await $client.compare(
     is $resp.result-code, compareTrue, 'Correct response code';
 }
 
+my @changes = add => { :type<cn>, :vals(['test']) },
+    replace => { :type<cp>, :vals(['test1', 'test2']) },
+    delete => { :type<ck> };
+given await $client.modify("cn=modify", @changes) -> $resp {
+    ok $resp ~~ ModifyResponse, 'Got Response::Modify object';
+}
 
 given await $client.modDN(
         dn => "cn=Modify Me, o=University of Life, c=US",
@@ -49,6 +55,12 @@ given await $client.modDN(
     ok $resp ~~ ModDNResponse, 'Got Response::ModDN object';
 }
 
-# Modify
+# Exnteded
+
+# StartTLS
+
+# Abandon
+
+# Search
 
 done-testing;

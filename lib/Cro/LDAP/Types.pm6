@@ -22,6 +22,7 @@ $map.push: (AttributeListBottom => AttributeListBottom);
 $map.push: (PartialAttributeListBottom => PartialAttributeListBottom);
 
 $map.push: (add => add);
+$map.push: (replace => replace);
 $map.push: (delete => delete);
 
 $map.push: (AttributeTypeAndValues => AttributeTypeAndValues);

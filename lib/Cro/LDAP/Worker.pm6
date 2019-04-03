@@ -7,6 +7,7 @@ role Cro::LDAP::Worker {
     method add($req --> AddResponse) {...}
     method delete($req --> DelResponse) {...}
     method compare($req --> CompareResponse) {...}
+    method modify($req --> ModifyResponse) {...}
     method modDN($req --> ModDNResponse) {...}
 
     method accept(Cro::LDAP::Message $request) {
@@ -27,6 +28,9 @@ role Cro::LDAP::Worker {
             }
             when CompareRequest {
                 compareResponse => self.compare($_);
+            }
+            when ModifyRequest {
+                modifyResponse => self.modify($_);
             }
             when ModDNRequest {
                 modDNResponse => self.modDN($_);

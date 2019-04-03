@@ -77,8 +77,19 @@ class Cro::LDAP::Client {
         self!wrap-request({ DelRequest.new($dn) });
     }
 
-    method compare(:$entry!, :$ava!) {
+    method compare($entry, :$ava!) {
         self!wrap-request({ CompareRequest.new(:$entry, :$ava) });
+    }
+
+    my %MODS = add => add, replace => replace, delete => delete;
+
+    method modify($object, @changes) {
+        my ModificationBottom @modification;
+        for @changes -> $change {
+            my $modification = AttributeTypeAndValues.new(type => $change.value<type>, vals => ASNSetOf[ASN::Types::OctetString].new(|($change.value<vals> // ())));
+            @modification.push: ModificationBottom.new(operation => %MODS{$change.key}, :$modification);
+        }
+        self!wrap-request({ ModifyRequest.new(:$object, :@modification) });
     }
 
     method modDN(:$dn!, :$new-dn!, :$delete = True, :$new-superior) {

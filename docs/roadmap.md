@@ -33,12 +33,14 @@
 - [x] Bind
 - [x] Add
 - [x] Delete
-- [ ] Compare
-- [ ] ModDN
-- [ ] Modify
+- [x] Compare
+- [x] ModDN
+- [x] Modify
 - [ ] Search
 - [ ] Unbind
-- [ ] Ext
+- [ ] Abandon
+- [ ] Extended
+- [ ] StartTLS
 
 ##### Misc
 
