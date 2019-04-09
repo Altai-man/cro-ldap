@@ -128,8 +128,7 @@ given await $client.bind -> $resp {
 };
 # unauthenticated authentication for logging purposes
 $client.bind(name => "foo");
-# TLS is negotiated and established before executing bind request,
-# if TLS is set to True for the client instance, and won't be otherwise
+# name/password authentication
 $client.bind(name => "foo", password => "password");
 ```
 
