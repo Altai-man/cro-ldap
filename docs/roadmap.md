@@ -3,7 +3,7 @@
 - [ ] Overview Directory Information Model RFC ([RFC 5412](https://tools.ietf.org/pdf/rfc4512.pdf))
 - [x] Implement LDAP URL ([RFC 4516](https://tools.ietf.org/pdf/rfc4516.pdf))
 - [x] Implement DN ([RFC 4514](https://tools.ietf.org/pdf/rfc4514.pdf))
-- [ ] [ASN.1] Recursive schema implementation
+- [x] [ASN.1] Recursive schema implementation
 - [x] Implement search filters ([RFC 4515](https://tools.ietf.org/pdf/rfc4515.pdf))
 
 ##### Authentication
@@ -44,4 +44,4 @@
 
 ##### Misc
 
-- [ ] Cleanup mess in `Types`
+- [x] Cleanup mess in `Types` (@Xliff++)
