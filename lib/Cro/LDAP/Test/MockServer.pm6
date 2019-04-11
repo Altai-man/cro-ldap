@@ -35,8 +35,8 @@ class MockLDAPWorker does Cro::LDAP::Worker {
         self.success-result(ModifyResponse);
     }
 
-    method modDN($req) {
-        self.success-result(ModDNResponse);
+    method modifyDN($req) {
+        self.success-result(ModifyDNResponse);
     }
 
     method search($req) {

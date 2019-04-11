@@ -47,12 +47,12 @@ given await $client.modify("cn=modify", @changes) -> $resp {
     ok $resp ~~ ModifyResponse, 'Got Response::Modify object';
 }
 
-given await $client.modDN(
+given await $client.modifyDN(
         dn => "cn=Modify Me, o=University of Life, c=US",
         new-dn => "cn=The New Me",
         :delete,
         new-superior => "cn=Robert Jenkins,ou=People,dc=example,dc=com") -> $resp {
-    ok $resp ~~ ModDNResponse, 'Got Response::ModDN object';
+    ok $resp ~~ ModifyDNResponse, 'Got Response::ModDN object';
 }
 
 # Exnteded

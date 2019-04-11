@@ -92,9 +92,9 @@ class Cro::LDAP::Client {
         self!wrap-request({ ModifyRequest.new(:$object, :@modification) });
     }
 
-    method modDN(:$dn!, :$new-dn!, :$delete = True, :$new-superior) {
+    method modifyDN(:$dn!, :$new-dn!, :$delete = True, :$new-superior) {
         self!wrap-request({
-            ModDNRequest.new(
+            ModifyDNRequest.new(
                     entry => $dn,
                     newrdn => $new-dn,
                     deleteoldrdn => $delete,
@@ -113,8 +113,12 @@ class Cro::LDAP::Client {
 
     method !wrap-with-envelope($request) {
         my $message-id = $!message-counter⚛++;
+        my $choice = $request.^name.subst(/(\w)/, *.lc, :1st);
+        if $request ~~ ModifyDNRequest {
+            $choice = 'modDNRequest';
+        }
         Cro::LDAP::Message.new(
                 :$message-id,
-                protocol-op => ProtocolOp.new(($request.^name.subst(/(\w)/, *.lc, :1st) => $request)));
+                protocol-op => ProtocolOp.new(($choice => $request)));
     }
 }
