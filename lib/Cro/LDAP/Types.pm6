@@ -17,7 +17,6 @@ $map.push: |%(|(MY::.map( { .value ~~ DerefAliases ?? (.key => .value) !! Any } 
 $map.push: (neverDerefAliases => neverDerefAliases);
 $map.push: (wholeSubtree => wholeSubtree);
 
-$map.push: (EqualityMatch => EqualityMatch);
 $map.push: (AttributeListBottom => AttributeListBottom);
 $map.push: (PartialAttributeListBottom => PartialAttributeListBottom);
 
@@ -42,8 +41,8 @@ $map.push: (AddRequest => AddRequest);
 $map.push: (AddResponse => AddResponse);
 $map.push: (DelRequest => DelRequest);
 $map.push: (DelResponse => DelResponse);
-$map.push: (ModDNRequest => ModDNRequest);
-$map.push: (ModDNResponse => ModDNResponse);
+$map.push: (ModifyDNRequest => ModifyDNRequest);
+$map.push: (ModifyDNResponse => ModifyDNResponse);
 $map.push: (CompareRequest => CompareRequest);
 $map.push: (CompareResponse => CompareResponse);
 $map.push: (AbandonRequest => AbandonRequest);

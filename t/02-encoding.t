@@ -138,10 +138,29 @@ my $search-request = Cro::LDAP::Message.new(
                 time-limit => 0,
                 types-only => False,
                 filter => Filter.new((equalityMatch =>
-                        EqualityMatch.new(
+                        AttributeValueAssertion.new(
                                 attribute-desc  => "objectClass",
                                 assertion-value => "organizationalPerson")
                 )),
+                attributes => Array[Str]("dn", "cn")
+                )))
+        );
+
+my $search-request-rec-test = Cro::LDAP::Message.new(
+        message-id => 5,
+        protocol-op => ProtocolOp.new((searchRequest => SearchRequest.new(
+                base-object => "dc=example,dc=com",
+                scope => wholeSubtree,
+                deref-aliases => neverDerefAliases,
+                size-limit => 0,
+                time-limit => 0,
+                types-only => False,
+                filter => Filter.new((not => Filter.new((
+                        equalityMatch =>
+                            AttributeValueAssertion.new(
+                                    attribute-desc  => "objectClass",
+                                    assertion-value => "organizationalPerson")
+                )))),
                 attributes => Array[Str]("dn", "cn")
                 )))
         );
@@ -502,7 +521,7 @@ is-deeply $parser.parse($del-response-ber), $del-response, "Del response is pars
 
 my $mod-dn-req = Cro::LDAP::Message.new(
         message-id => 5,
-        protocol-op => ProtocolOp.new((modDNRequest => ModDNRequest.new(
+        protocol-op => ProtocolOp.new((modDNRequest => ModifyDNRequest.new(
                 entry => "dn=foo",
                 newrdn => "dn=boo",
                 :deleteoldrdn,
@@ -534,7 +553,7 @@ is-deeply $parser.parse($mod-dn-req-ber), $mod-dn-req, "Modify DN request is par
 
 my $mod-dn-response = Cro::LDAP::Message.new(
         message-id => 5,
-        protocol-op => ProtocolOp.new((modDNResponse => ModDNResponse.new(
+        protocol-op => ProtocolOp.new((modDNResponse => ModifyDNResponse.new(
                 result-code => success,
                 matched-dn => "foo",
                 error-message => "")))
