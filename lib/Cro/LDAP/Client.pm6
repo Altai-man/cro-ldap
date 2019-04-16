@@ -75,21 +75,19 @@ class Cro::LDAP::Client {
         self.connect($url.hostname, $url.port);
     }
 
-    method bind(Str $name, :$auth = "") {
+    method bind(Str :$name = "", :$password = "") {
         self!wrap-request({
-            my $authentication = AuthenticationChoice.new($auth ~~ Str ??
-                    simple => ASN::Types::OctetString.new($auth) !!
-                    sasl => SaslCredentials.new(|$auth));
-            BindRequest.new(
-                    version => 3, :$name,
-                    :$authentication);
+            my $authentication = AuthenticationChoice.new($password ~~ Str ??
+                    simple => ASN::Types::OctetString.new($password) !!
+                    sasl => SaslCredentials.new(|$password));
+            BindRequest.new(version => 3, :$name, :$authentication);
         });
     }
 
-    method add($dn, @attributes) {
+    method add($dn, :@attrs) {
         self!wrap-request({
             my $attributes = Array[AttributeListBottom].new;
-            for @attributes {
+            for @@attrs {
                 $attributes.push: AttributeListBottom.new(
                         type => .key,
                         vals => ASNSetOf[ASN::Types::OctetString].new(.value));
@@ -102,8 +100,11 @@ class Cro::LDAP::Client {
         self!wrap-request({ DelRequest.new($dn) });
     }
 
-    method compare($entry, :$ava!) {
-        self!wrap-request({ CompareRequest.new(:$entry, :$ava) });
+    method compare(Str $entry, Str $attribute-desc, Str $assertion-value) {
+        self!wrap-request({
+            my $ava = AttributeValueAssertion.new(:$attribute-desc, :$assertion-value);
+            CompareRequest.new(:$entry, :$ava);
+        });
     }
 
     my %MODS = add => add, replace => replace, delete => delete;
@@ -135,17 +136,13 @@ class Cro::LDAP::Client {
             :$attributes = Array[Str].new()) {
         my $filter-object = Cro::LDAP::Search.parse($filter);
         self!wrap-request({
-            my $req = SearchRequest.new(
-                    base-object => $base, #ASN::Types::OctetString.new($base),
+            SearchRequest.new(
+                    base-object => $base,
                     :$scope, :$deref-aliases,
                     :$size-limit, :$time-limit,
                     :$types-only, :$attributes,
                     filter => $filter-object);
-            $req;
         });
-#        $!pipeline
-
-#        note $filter-object;
     }
 
     method !wrap-request(&make-message) {
