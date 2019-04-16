@@ -1,32 +1,52 @@
+use OO::Monitors;
 use ASN::Types;
+use Cro::LDAP::Search;
 use Cro::LDAP::Types;
 use Cro::LDAP::RequestSerializer;
 use Cro::LDAP::ResponseParser;
+use Cro::LDAP::URL;
 
 class Cro::LDAP::Client {
     has IO::Socket::Async $!socket;
     has atomicint $!message-counter = 1;
 
-    my class Pipeline {
+    my monitor Pipeline {
         has Supplier $!in;
         has Tap $!tap;
-        has $!next-response-vow;
+        has %!RESPONSE-TABLE;
+        has $!lock = Lock.new;
 
         submethod BUILD(:$!in, :$out!) {
             $!tap = supply {
-                whenever $out {
-                    my $vow = $!next-response-vow;
-                    $!next-response-vow = Nil;
-                    $vow.keep($_.protocol-op.ASN-value.value);
+                whenever $out -> $resp {
+                    given $resp.protocol-op.key {
+                        when 'searchResEntry'|'searchResRef' {
+
+                            %!RESPONSE-TABLE{$resp.message-id}.emit: $resp.protocol-op.value;
+                        }
+                        when 'searchResDone' {
+                            %!RESPONSE-TABLE{$resp.message-id}.done;
+                        }
+                        default {
+                            %!RESPONSE-TABLE{$resp.message-id}.keep($resp.protocol-op.value);
+                        }
+                    }
                 }
             }.tap;
         }
 
         method send-request(Cro::LDAP::Message $request) {
-            my $next-response-promise = Promise.new;
-            $!next-response-vow = $next-response-promise.vow;
             $!in.emit($request);
-            $next-response-promise
+            given $request.protocol-op.key {
+                when 'searchRequest' {
+                    my $entries = Supplier.new;
+                    %!RESPONSE-TABLE{$request.message-id} = $entries;
+                    $entries.Supply;
+                }
+                default {
+                    %!RESPONSE-TABLE{$request.message-id} = Promise.new;
+                }
+            }
         }
     }
 
@@ -43,11 +63,16 @@ class Cro::LDAP::Client {
         Pipeline.new(:$in, :$out);
     }
 
-    method connect(Str $host, Int $port) {
+    multi method connect(Str $host, Int $port) {
         IO::Socket::Async.connect($host, $port).then(-> $promise {
             $!socket = $promise.result;
             $!pipeline = self!get-pipeline(:$host, :$port);
         });
+    }
+
+    multi method connect(Str $host) {
+        my $url = Cro::LDAP::URL.parse($host);
+        self.connect($url.hostname, $url.port);
     }
 
     method bind(Str $name, :$auth = "") {
@@ -102,13 +127,30 @@ class Cro::LDAP::Client {
         });
     }
 
+    method search(Str :$base!, Str :$filter!,
+            Scope :$scope = wholeSubtree,
+            DerefAliases :$deref-aliases = derefFindingBaseObj,
+            Int :$size-limit = 0, Int :$time-limit = 0,
+            Bool :$types-only = False,
+            :$attributes = Array[Str].new()) {
+        my $filter-object = Cro::LDAP::Search.parse($filter);
+        self!wrap-request({
+            my $req = SearchRequest.new(
+                    base-object => $base, #ASN::Types::OctetString.new($base),
+                    :$scope, :$deref-aliases,
+                    :$size-limit, :$time-limit,
+                    :$types-only, :$attributes,
+                    filter => $filter-object);
+            $req;
+        });
+#        $!pipeline
+
+#        note $filter-object;
+    }
+
     method !wrap-request(&make-message) {
-        Promise(supply {
-            my $message = make-message;
-            whenever $!pipeline.send-request(self!wrap-with-envelope($message)) {
-                emit $_;
-            }
-        })
+         my $message = make-message;
+         $!pipeline.send-request(self!wrap-with-envelope($message));
     }
 
     method !wrap-with-envelope($request) {

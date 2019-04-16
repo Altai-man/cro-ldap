@@ -5,7 +5,7 @@
 ```perl6
 use Cro::LDAP::Client;
 
-my $client = Cro::LDAP::Client.connect('ldap.example.com');
+my $client = Cro::LDAP::Client.connect('ldap://ldap.example.com/');
 
 await $client.bind; # anonymous bind
 
@@ -17,7 +17,7 @@ react {
 
 await $client.unbind;
 
-$client = Cro::LDAP::Client.connect('ldap.example.org');
+$client = Cro::LDAP::Client.connect('ldap://ldap.example.org/');
 
 await $client.bind('cn=root, o=Foos of Bar', password => 'secret');
 
@@ -86,12 +86,12 @@ $client = Cro::LDAP::Client.new(:host<remote.org/>, :port(390)).connect;
 # Explicit URL
 
 # connects to `ldap://remote2.com:250/`
-$client = Cro::LDAP::Client.new.connect('ldap://remote2.com/250');
+$client = Cro::LDAP::Client.new.connect('ldap://remote2.com:250');
 
 # Explicit URL overrides attributes
 
 # connects to `ldap://remote2.com:250/` too
-$client = Cro::LDAP::Client.new(:host<remote.org/>, :port(390)).connect('ldap://remote2.com/250');
+$client = Cro::LDAP::Client.new(:host<remote.org/>, :port(390)).connect('ldap://remote2.com:250');
 ```
 
 As a shortcut, the `connect` method can be called on `Cro::LDAP::Client`
@@ -114,12 +114,16 @@ has no return value.
 
 #### BIND
 
-Sends authentication data to the server. As for now, only simple
-authentication mechanisms are supported:
+THe `bind` method sends the authentication data to the server. As for
+now, only simple authentication mechanisms are supported:
 
 - Anonymous authentication
 - Unauthenticated authentication
 - Name/Password authentication
+
+To use an anonymous authentication, no arguments are required. To use
+either unauthenticated authentication or name/password authentication,
+`name` and `password` fields can be passed.
 
 ```perl6
 # anonymous authentication -> name and password are empty
@@ -134,8 +138,8 @@ $client.bind(name => "foo", password => "password");
 
 #### UNBIND
 
-Sends an unbind request to the server and gracefully ends an underlying
-connection.
+The `unbind` method sends an unbind request to the server and gracefully
+ends an underlying connection.
 
 ```perl6
 $client.unbind;
@@ -143,13 +147,17 @@ $client.unbind;
 
 #### SEARCH
 
-Performs a search request and returns a supply that will emit entries.
+The `search` method performs a search request and returns a `Supply`
+object that emits either `Cro::LDAP::Entry` objects for entries returned
+from the server or `Cro::LDAP::Search::Reference` objects for returned
+references.
 
 ```perl6
 react {
     whenever $client.search(dn => 'c=foo',
-                            filter => '(sn:dn:2.4.6.8.10:=Barney Rubble)') -> $entry {
-        say $entry;
+                            filter => '(sn:dn:2.4.6.8.10:=Barney Rubble)') {
+        when Cro::LDAP::Entry { say $_ }
+        when Cro::LDAP::Search::Reference { say $_ }
 
         LAST { say "No more entries!" }
         QUIT {
@@ -189,12 +197,62 @@ $client.modify("cn=modify", @changes);
 
 #### ADD
 
+The `add` method takes a `Str` argument and an optional `Positional` of
+pairs that represent attributes to be set for the created entry.
+
+```perl6
+$client.add("cn=add", attrs => [:foo<bar>, :bar<1 2 3>]);
+```
+
 #### DELETE
+
+The `delete` method takes a `Str` argument that specified a DN to be
+deleted.
+
+```perl6
+$client.delete("cn=Robert Jenkins,ou=People,dc=example,dc=com");
+```
 
 #### MODIFY DN
 
+The `modifyDN` method takes two mandatory arguments, `dn` and `new-dn`,
+both are `Pair` objects that represent old and new DN respectedly. To
+set a deletion flag for the old DN, `delete` boolean named attribute can
+be passed. It defaults to `False`. To set a new superior DN, optional
+`new-superior` named argument can be used - it must be a `Str` instance
+with value of new superior DN for the renamed entry.
+
+```perl6
+$client.modifyDN(:dn('cn=Modify Me, o=University of Life, c=US'),
+                 :new-dn('cn=The New Me'));
+# or
+$client.modifyDN(
+        dn => "cn=Modify Me, o=University of Life, c=US",
+        new-dn => "cn=The New Me",
+        :delete,
+        new-superior => "cn=Robert Jenkins,ou=People,dc=example,dc=com");
+```
+
 #### COMPARE
+
+The `compare` method takes three mandatory, positional arguments: a
+`Str` object that represents a DN of the entry to use for the request, a
+`Str` object that represents name of the attribute to compare and a
+`Str` object that represents a value to compare with.
+
+```perl6
+$client.compare("uid=bjensen,ou=people,dc=example,dc=com",
+                "sn", "Doe");
+```
 
 #### ABANDON
 
-#### StartTLS
+The `abandon` message sends an abandon request for particular message
+ID, passed as `Int` object.
+
+```perl6
+$client.abandon(42);
+```
+
+### Controls
+

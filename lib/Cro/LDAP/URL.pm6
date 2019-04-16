@@ -1,66 +1,8 @@
-no precompilation;
 use Cro::Uri;
-
-grammar Common {
-    token UTFMB { <UTF2> | <UTF3> | <UTF4> }
-    token UTF0 { <[ \x80..\xBF ]> }
-    token UTF2 { <[ \xC2..\xDF ]> <UTF0> }
-    token UTF3 {
-        | [ <[\xE0]> <[\xA0..\xBF]> <UTF0> ]
-        | [ <[\xE1..\xEC]> <UTF0> ** 2 ]
-        | [ \xED <[\x80..\x9F]> <UTF0> ]
-        | [ <[\xEE..\xEF]> <UTF0> ** 2 ]
-    }
-    token UTF4 {
-        | [ \xF0 <[\x90..\xBF]> <UTF0> ** 2 ]
-        | [ <[\xF1..\xF3]> <UTF0> ** 3 ]
-        | \xF4 [ <[\x80..\x8F]> <UTF0> ** 2 ]
-    }
-
-    token hex { <digit> | <[\x41..\x46 \x61..\x66]> }
-
-    regex descr { <leadkey> <keychar>*? }
-    token leadkey { <[a..zA..Z]> }
-    token keychar { <[-a..zA..Z0..9]> }
-
-    token numericoid { <number> [ "." <number> ]? }
-    token number { <[0..9]> | [ <[1..9]> <[0..9]> ] }
-}
-
-grammar Attributes {
-    regex attributeDescription { <attributeType> <options> }
-    regex attributeType { <oid> }
-    regex oid { <Common::descr> | <Common::numericoid> }
-    token options { [ ';' <option> ]*? }
-    token option { <[- \x41..\x5A \x61..\x7A \x30..\x39]> } # -A..Za..z0..9
-}
+use Cro::LDAP::Grammars;
+use Cro::LDAP::Search;
 
 # Common regexes
-grammar Search {
-    token TOP { <filter> }
-    token filter { '(' <filtercomp> ')'}
-    token filtercomp { <and> | <or> | <not> | <search-item> }
-    token and { '&' <filterlist> }
-    token or { '|' <filterlist> }
-    token not { '!' <filterlist> }
-    token filterlist { <filter>+ }
-    token search-item { <simple> | <present> | <substring> | <extensible> }
-    regex simple { <attr> <filtertype> <assertionValue> }
-    token filtertype { "=" | "~=" | "<=" | ">=" }
-    token extensible { [ <attr> <dnattrs>? <matching-rule>? ':=' <assertionValue> ] | [ <dnattrs>? <matching-rule> ':=' <assertionValue> ] }
-    token present { <attr> '=*' }
-    token substring { <attr> '=' <initial>? <any> <final>? }
-    token initial { <assertionValue> }
-    token any { '*' [<assertionValue> '*']*? }
-    token final { <assertionValue> }
-    regex attr { <Attributes::attributeDescription> }
-    token dnattrs { ':dn' }
-    token matching-rule { ':' <Attributes::oid> }
-    token assertionValue { [ <normal> | <escaped> ]* }
-    token normal { <UTF1SUBSET> | <Common::UTFMB> }
-    token escaped { "\\" <Common::hex> <Common::hex> }
-    token UTF1SUBSET { <[\x01..\x27 \x2B..\x5B \x5D..\x7F]> }
-}
 
 grammar DN is export {
     token TOP { <relativeDN>* % ',' }
@@ -113,7 +55,7 @@ class Cro::LDAP::URL {
         regex query {
             "/" [ <DN::relativeDN>* % ',' ] [ "?" <attributes>?
                 [ "?" <scope>?
-                    ["?" <Search::filter>?
+                    ["?" <Cro::LDAP::Search::Grammar::filter>?
                         [ "?" <extensions> ]?
                     ]?
                 ]?
@@ -151,7 +93,7 @@ class Cro::LDAP::URL {
             with $<query><scope> {
                 $scope = ~$_.lc;
             }
-            with $<query><Search::filter> {
+            with $<query><Cro::LDAP::Search::Grammar::filter> {
                 $filter = ~$_<filtercomp>;
             }
             with $<query><extensions> {

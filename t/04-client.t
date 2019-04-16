@@ -55,12 +55,10 @@ given await $client.modifyDN(
     ok $resp ~~ ModifyDNResponse, 'Got Response::ModDN object';
 }
 
-# Exnteded
-
-# StartTLS
-
-# Abandon
-
-# Search
+react {
+    whenever $client.search(base => "c=US", filter => '(&(sn=Barr)(o=Texas Instruments))') -> $entry {
+        ok $entry ~~ SearchResultEntry, "Received a result entry";
+    }
+}
 
 done-testing;
