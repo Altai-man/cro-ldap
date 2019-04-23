@@ -1,38 +1,44 @@
 {
-    "license": "Artistic-2.0",
-    "source-url": "https://github.com/Altai-man/cro-ldap.git",
-    "depends": [
-        "Cro::Core",
-        "ASN::BER",
-        "ASN::META",
-        "OO::Monitors"
-    ],
-    "auth": "github:Altai-man",
-    "provides": {
-        "Cro::LDAP::Search": "lib/Cro/LDAP/Search.pm6",
-        "Cro::LDAP::RequestSerializer": "lib/Cro/LDAP/RequestSerializer.pm6",
-        "Cro::LDAP::GenericParser": "lib/Cro/LDAP/GenericParser.pm6",
-        "Cro::LDAP::Types": "lib/Cro/LDAP/Types.pm6",
-        "Cro::LDAP::Search::Entry": "lib/Cro/LDAP/Search/Entry.pm6",
-        "Cro::LDAP::RequestParser": "lib/Cro/LDAP/RequestParser.pm6",
-        "Cro::LDAP::URL": "lib/Cro/LDAP/URL.pm6",
-        "Cro::LDAP::Worker": "lib/Cro/LDAP/Worker.pm6",
-        "Cro::LDAP::Client": "lib/Cro/LDAP/Client.pm6",
-        "Cro::LDAP::ResponseSerializer": "lib/Cro/LDAP/ResponseSerializer.pm6",
-        "Cro::LDAP::ResponseParser": "lib/Cro/LDAP/ResponseParser.pm6",
-        "Cro::LDAP::Grammars": "lib/Cro/LDAP/Grammars.pm6",
-        "Cro::LDAP::Server": "lib/Cro/LDAP/Server.pm6",
-        "Cro::LDAP::Search::Reference": "lib/Cro/LDAP/Search/Reference.pm6"
-    },
-    "name": "Cro::LDAP",
-    "description": "LDAP support",
-    "resources": [],
-    "perl": "6.*",
-    "version": "0.1",
-    "tags": [
-        "LDAP",
-        "Client",
-        "Server"
-    ],
-    "authors": ["Alexander Kiryuhin <alexander.kiryuhin@gmail.com>"]
+  "name": "Cro::LDAP",
+  "description": "LDAP support",
+  "version": "0.2",
+  "perl": "6.*",
+  "authors": [
+    "Alexander Kiryuhin <alexander.kiryuhin@gmail.com>"
+  ],
+  "auth": "github:Altai-man",
+  "depends": [
+    "Cro::Core",
+    "ASN::BER",
+    "ASN::META",
+    "OO::Monitors",
+    "Text::LDIF"
+  ],
+  "build-depends": [],
+  "test-depends": [],
+  "provides": {
+    "Cro::LDAP::Client": "lib/Cro/LDAP/Client.pm6",
+    "Cro::LDAP::DN": "lib/Cro/LDAP/DN.pm6",
+    "Cro::LDAP::GenericParser": "lib/Cro/LDAP/GenericParser.pm6",
+    "Cro::LDAP::Grammars": "lib/Cro/LDAP/Grammars.pm6",
+    "Cro::LDAP::RequestParser": "lib/Cro/LDAP/RequestParser.pm6",
+    "Cro::LDAP::RequestSerializer": "lib/Cro/LDAP/RequestSerializer.pm6",
+    "Cro::LDAP::ResponseParser": "lib/Cro/LDAP/ResponseParser.pm6",
+    "Cro::LDAP::ResponseSerializer": "lib/Cro/LDAP/ResponseSerializer.pm6",
+    "Cro::LDAP::Search": "lib/Cro/LDAP/Search.pm6",
+    "Cro::LDAP::Search::Entry": "lib/Cro/LDAP/Search/Entry.pm6",
+    "Cro::LDAP::Search::Reference": "lib/Cro/LDAP/Search/Reference.pm6",
+    "Cro::LDAP::Server": "lib/Cro/LDAP/Server.pm6",
+    "Cro::LDAP::Types": "lib/Cro/LDAP/Types.pm6",
+    "Cro::LDAP::URL": "lib/Cro/LDAP/URL.pm6",
+    "Cro::LDAP::Worker": "lib/Cro/LDAP/Worker.pm6"
+  },
+  "resources": [],
+  "license": "Artistic-2.0",
+  "tags": [
+    "LDAP",
+    "Client",
+    "Server"
+  ],
+  "source-url": "https://github.com/Altai-man/cro-ldap.git"
 }
