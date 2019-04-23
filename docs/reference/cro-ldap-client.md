@@ -31,6 +31,8 @@ given await $client.add('cn=One Person, o=Earth, c=US',
 }
 
 await $client.unbind;
+
+$client.disconnect;
 ```
 
 #### Instantiation and connection
@@ -101,6 +103,14 @@ returning the created object:
 
 ```perl6
 my $client = Cro::LDAP::Client.connect('ldap://remote.org:389');
+```
+
+##### Disconnecting
+
+To disconnect from the server, just call `disconnect` method:
+
+```perl6
+$client.disconnect;
 ```
 
 ### Operations
@@ -200,6 +210,8 @@ $client.modify("cn=modify", @changes);
 The `add` method takes a `Str` argument and an optional `Positional` of
 pairs that represent attributes to be set for the created entry.
 
+This method accepts controls.
+
 ```perl6
 $client.add("cn=add", attrs => [:foo<bar>, :bar<1 2 3>]);
 ```
@@ -247,12 +259,134 @@ $client.compare("uid=bjensen,ou=people,dc=example,dc=com",
 
 #### ABANDON
 
-The `abandon` message sends an abandon request for particular message
-ID, passed as `Int` object.
+Abandon operation is called on a Promise object that is returned from
+other methods, such as `add`, and is available for a `Supply` objects
+returned too.
+
+This method accepts controls.
 
 ```perl6
-$client.abandon(42);
+my $add-request = $client.add(...);
+$add-request.abandon;
+# or a supply
+react {
+    my $search-request = $client.search(dn => 'c=foo',
+                                        filter => '(sn:dn:2.4.6.8.10:=Barney Rubble)');
+    # we don't need more after three seconds
+    Promise.in(3).then({ $search-request.abandon });     
+    whenever $search-request -> $entry {
+        # process $entry
+    }
+}
+```
+
+### Root DSE
+
+The method `get-root-DSE` is used to obtain the `Cro::LDAP::RootDSE`
+object that contains information about server's rootDSE. It takes an
+arbitrary number of strings that represent attributes to request for.
+The attributes passed are additional to default ones:
+
+```
+subschemaSubentry
+namingContexts
+altServer
+supportedExtension
+supportedFeatures
+supportedControl
+supportedSASLMechanisms
+supportedLDAPVersion
+```
+
+The method returns a `Cro::LDAP::RootDSE` object that contain requested
+attributes.
+
+```perl6
+my $root = await $client.get-root-DSE('customAttribute1', 'customAttribute2');
+# Two custom attributes passed as arguments
+say $root<customAttribute1 customAttribute2>;
+# Supported versions along with other default attributes are always requested and available
+say $root.supported-version;
+```
+
+### Server Schema
+
+To get server's schema information a named called `schema` can be used.
+A DN to use can be passed as a `Str` object argument. An object of class
+`Cro::LDAP::Schema` is returned.
+
+```perl6
+my $schema = $client.schema;
+$schema = $client.schema($DN);
 ```
 
 ### Controls
 
+Almost all methods that implement operations support sending additional
+control values to the server.
+
+To add a control to an operation, additional named argument `control` is
+passed. Its value can be an `Cro::LDAP::Control` object or a `Hash`
+instance with up to three pairs included:
+
+* `type` - a `Str` value for control's type
+* `critical` - a `Bool` value for control's criticality (its default
+  value - `False`)
+* `value` - a `Str` value for control's value, absent by default
+
+It allows for expressing any control that can be send to a server. For
+commonly used controls a predefined classes are provided, see
+`Cro::LDAP::Control` page for a full list.
+
+```perl6
+my $control = Cro::LDAP::Control::DontUseCopy;
+
+# Pass two controls
+# Use a predefined type object or a Hash-described equivalent
+$client.compare("uid=bjensen,ou=people,dc=example,dc=com", "sn", "Doe",
+                controls => [
+                    $control,
+                    { type => "1.3.6.1.1.22", :criticality }]);
+# Pass a single control
+$client.compare("uid=bjensen,ou=people,dc=example,dc=com", "sn", "Doe",
+                controls => $control);
+```
+
+### Extensions
+
+A general support for LDAP Extended Operation is provided and a set of
+specific extensions supported by `perl-ldap` package is included.
+
+In general case, to send an extended request a `extend` method is called
+with two named arguments: `name` is required and represents the
+operation's LDAP OID passed as `Str` object, and `value`, which is an
+instance of a class that can be serialized using `ASN::Serializer`
+class. In case if the extended request does not include a value, it can
+be omitted.
+
+To use included extensions from `Cro::LDAP::Extension` compunit, an
+instance of particular class is constructed and passed to `extend`
+method. A listing of supported extensions and their interfaces is
+described in `Cro::LDAP::Extension` compunit documentation.
+
+```perl6
+use ASN::Types;
+
+class CancelRequestValue does ASNSequence {
+    has Int $.cancelID is required;
+
+    method ASN-order { <$!cancelID> }
+}
+
+my $cancelValue = CanceLRequestValue.new(cancelID => 65);
+
+my $resp = await $client.extend(
+    name => "1.3.6.1.1.8",
+    value => $cancelValue
+);
+
+# Or, if using an included type, just
+use Cro::LDAP::Extension;
+
+my $resp = await $client.extend(Cro::LDAP::Extension::Cancel.new(65));
+```
