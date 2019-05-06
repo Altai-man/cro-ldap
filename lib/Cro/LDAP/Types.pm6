@@ -1,8 +1,6 @@
 use Cro;
 use ASN::Types;
-use ASN::META <file docs/ldap.asn plugin resources/asn-plugin>;
-
-role Cro::LDAP::Response {}
+use ASN::META <file docs/ldap.asn plugin Cro::LDAP::ASN::Plugin>;
 
 class Cro::LDAP::Message is LDAPMessage does Cro::Message {
     method trace-output(--> Str) {

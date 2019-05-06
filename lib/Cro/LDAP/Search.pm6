@@ -2,29 +2,31 @@ use Cro::LDAP::Types;
 use Cro::LDAP::Grammars;
 
 grammar Cro::LDAP::Search::Grammar {
-    token TOP { <filter> }
-    token filter { '(' <filtercomp> ')'}
-    token filtercomp { <and> | <or> | <not> | <search-item> }
-    token and { '&' <filterlist> }
-    token or { '|' <filterlist> }
-    token not { '!' <filter> }
-    token filterlist { <filter>+ }
-    token search-item { <simple> | <present> | <substring> | <extensible> }
+    regex TOP { <filter> }
+    regex filter { '(' <filtercomp> ')'}
+    regex filtercomp { <and> | <or> | <not> | <search-item> }
+    regex and { '&' <filterlist> }
+    regex or { '|' <filterlist> }
+    regex not { '!' <filter> }
+    regex filterlist { <filter>+ }
+    regex search-item { <simple> | <present> | <substring> | <extensible> }
     regex simple { <attr> <filtertype> <assertionValue> }
-    token filtertype { "=" | "~=" | "<=" | ">=" }
-    token extensible { [ <attr> <dnattrs>? <matching-rule>? ':=' <assertionValue> ] | [ <dnattrs>? <matching-rule> ':=' <assertionValue> ] }
-    token present { <attr> '=*' }
-    token substring { <attr> '=' <initial>? <any> <final>? }
-    token initial { <assertionValue> }
-    token any { '*' [<assertionValue> '*']*? }
-    token final { <assertionValue> }
+    regex filtertype { "=" | "~=" | "<=" | ">=" }
+    regex extensible {
+        | [ <attr> <dnattrs>? <matching-rule>? ':=' <assertionValue> ]
+        | [ <dnattrs>? <matching-rule> ':=' <assertionValue> ] }
+    regex present { <attr> '=*' }
+    regex substring { <attr> '=' <initial>? <any> <final>? }
+    regex initial { <assertionValue> }
+    regex any { '*' [<assertionValue> '*']*? }
+    regex final { <assertionValue> }
     regex attr { <Attributes::attributeDescription> }
-    token dnattrs { ':dn' }
-    token matching-rule { ':' <Attributes::oid> }
-    token assertionValue { [ <normal> | <escaped> ]* }
-    token normal { <UTF1SUBSET> | <Common::UTFMB> }
-    token escaped { "\\" <Common::hex> <Common::hex> }
-    token UTF1SUBSET { <[\x01..\x27 \x2B..\x5B \x5D..\x7F]> }
+    regex dnattrs { :i ':dn' }
+    regex matching-rule { ':' <Attributes::oid> }
+    regex assertionValue { [ <normal> | <escaped> ]* }
+    regex normal { <UTF1SUBSET> | <Common::UTFMB> }
+    regex escaped { "\\" <Common::hex> <Common::hex> }
+    regex UTF1SUBSET { <[\x01..\x27 \x2B..\x5B \x5D..\x7F]> }
 }
 
 class Cro::LDAP::Search::Actions {
@@ -66,8 +68,9 @@ class Cro::LDAP::Search::Actions {
 
     method simple($/) {
         my $value = AttributeValueAssertion.new(
-                attribute-desc => ~$<attr>,
+                attribute-desc => $<attr>.made,
                 assertion-value => ~$<assertionValue>);
+
         given $<filtertype> {
             when "=" {
                 make (equalityMatch => $value);
@@ -82,6 +85,57 @@ class Cro::LDAP::Search::Actions {
                 make (greaterOrEqual => $value);
             }
         }
+    }
+
+    method substring($/) {
+        make (substrings => SubstringFilter.new(
+                type => $<attr>.made,
+                substrings => Array[SubstringsBottom].new(
+                    |(SubstringsBottom.new((initial => ASN::Types::OctetString.new(~$_))) with $<initial>),
+                    |$<any>.made,
+                    |(SubstringsBottom.new((final => ASN::Types::OctetString.new(~$_))) with $<final>))
+                ));
+    }
+
+    method any($/) {
+        my @results;
+        for @($<assertionValue>) -> $item {
+            @results.push: SubstringsBottom.new((any => ASN::Types::OctetString.new(~$item)));
+        }
+        make Array[SubstringsBottom](@results);
+    }
+
+    method attr($/) { make ~$/ }
+
+    method extensible($/) {
+        my %opts;
+        with $<dnattrs> {
+            %opts<dn-attributes> = True;
+        }
+        with $<attr> {
+            %opts<type> = ~$_;
+        }
+        with $<matching-rule> {
+            %opts<matching-rule> = $_.made;
+        }
+        with $<assertionValue> {
+            %opts<match-value> = $_.made;
+        }
+
+        my $assertion = MatchingRuleAssertion.new(|%opts);
+        make (extensibleMatch => $assertion)
+    }
+
+    method present($/) {
+        make (present => ASN::Types::OctetString.new($<attr>.made));
+    }
+
+    method matching-rule($/) {
+        make ~$<Attributes::oid>;
+    }
+
+    method assertionValue($/) {
+        make ~$/;
     }
 }
 

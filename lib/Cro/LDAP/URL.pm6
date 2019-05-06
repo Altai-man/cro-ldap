@@ -1,33 +1,9 @@
 use Cro::Uri;
+use Cro::LDAP::DN;
 use Cro::LDAP::Grammars;
 use Cro::LDAP::Search;
 
 # Common regexes
-
-grammar DN is export {
-    token TOP { <relativeDN>* % ',' }
-    regex relativeDN { <attributeTypeAndValue>+? % "+" }
-    regex attributeTypeAndValue { <attrType> "=" <attrValue> }
-    token attrType { <Common::descr> | <Common::numericoid> }
-    regex attrValue { <string> | <hexstr> }
-
-    regex string { [ [<leadchar> | <pair>] [ [ <stringchar> | <pair> ]*? [ <trailchar> | <pair> ] ]? ]? }
-
-    token pair { "\\" [ "\\" | <special> | <hexpair> ] }
-    token special { <escaped> | <[\ #=]> }
-    token escaped { <["+,;<>]> }
-    token hexstr { '#' <hexpair> }
-    token hexpair { <Common::hex> ** 2 }
-
-    token leadchar { <LUTF1> | <Common::UTFMB> }
-    token LUTF1 { <[ \x01..\x1F \x21 \x24..\x2A \x2D..\x3A \x3D \x3F..\x5B \x5D..\x7F ]> }
-
-    token trailchar { <TUTF1> | <Common::UTFMB> }
-    token TUTF1 { <[ \x01..\x1F \x21 \x23..\x2A \x2D..\x3A \x3D \x3F..\x5B \x5D..\x7F ]> }
-
-    token stringchar { <SUTF1> | <Common::UTFMB> }
-    token SUTF1 { <[ \x01..\x21 \x23..\x2A \x2D..\x3A \x3D \x3F..\x5B \x5D..\x7F ]> }
-}
 
 class Cro::LDAP::URL {
     has Str $.hostname;
@@ -53,7 +29,7 @@ class Cro::LDAP::URL {
         }
 
         regex query {
-            "/" [ <DN::relativeDN>* % ',' ] [ "?" <attributes>?
+            "/" [ <Cro::LDAP::DN::Grammar::relativeDN>* % ',' ] [ "?" <attributes>?
                 [ "?" <scope>?
                     ["?" <Cro::LDAP::Search::Grammar::filter>?
                         [ "?" <extensions> ]?
@@ -82,9 +58,9 @@ class Cro::LDAP::URL {
     class Actions {
         method TOP($/) {
             my ($scope, $filter, @attributes, @DN, @extensions) = ('base', 'objectClass=*');
-            my $host = $<entity><host>;
-            my $port = $<entity><port> // 389;
-            with $<query><DN::relativeDN> {
+            my $host = ~$<entity><host>;
+            my $port = $<entity><port>;
+            with $<query><Cro::LDAP::DN::Grammar::relativeDN> {
                 @DN = $_>>.Str;
             }
             with $<query><attributes> {
@@ -101,8 +77,8 @@ class Cro::LDAP::URL {
             }
 
             make Cro::LDAP::URL.new:
-                    hostname => ~$<entity><host>,
-                    port => $port.Int, :@DN, :@attributes,
+                    hostname => $host.chars ?? $host !! Str,
+                    port => $port ?? $port.Int !! Int, :@DN, :@attributes,
                     :$scope, :$filter, :@extensions;
         }
     }

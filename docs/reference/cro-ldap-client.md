@@ -10,8 +10,13 @@ my $client = Cro::LDAP::Client.connect('ldap://ldap.example.com/');
 await $client.bind; # anonymous bind
 
 react {
-    whenever $client.search(base => "c=US", filter => '(&(sn=Barr)(o=Texas Instruments))') -> $entry {
-        say $entry; # .gist returns LDIF
+    whenever $client.search(base => "c=US", filter => '(&(sn=Barr)(o=Texas Instruments))') {
+        when Cro::LDAP::Entry {
+            say $_; # .gist returns LDIF
+        }
+        when Cro::LDAP::Reference {
+            say $_; # references
+        }
     }
 }
 
@@ -22,8 +27,8 @@ $client = Cro::LDAP::Client.connect('ldap://ldap.example.org/');
 await $client.bind('cn=root, o=Foos of Bar', password => 'secret');
 
 given await $client.add('cn=One Person, o=Earth, c=US',
-                        ["objectclass" => ["inetOrgPerson","person"],
-                         "mail" => "person@mail.example.com"]) -> $resp {
+                        attrs => ["objectclass" => ["inetOrgPerson","person"],
+                                  "mail" => "person@mail.example.com"]) -> $resp {
     if $resp.status {
         say $resp.matchedDN;
         say $resp.msg;
@@ -58,17 +63,32 @@ If the same object won't be re-used with different remote hosts, `host`
 and `port` parameters can be passed: default values are `localhost` and
 `389` respectedly.
 
+###### connect
+
+```perl6
+multi method connect(Str $ldap-url --> Promise) {}
+multi method connect(Str :$host, Int :$port --> Promise) {}
+```
+
 To establish a new connection to the server, `connect` method should be
 used. The `connect` method returns a `Promise` that will be either kept
-or broken depending on success or failure during the connection process.
-It takes a LDAP URL (according to
-[RFC 4516](https://tools.ietf.org/pdf/rfc4516.pdf) as a parameter:
+with the caller `Cro::LDAP::Client` instance or broken depending on a
+success or a failure during the connection process.
+
+It has number of candiates to call.
+
+The most commonly used takes a LDAP URL (according to
+[RFC 4516](https://tools.ietf.org/pdf/rfc4516.pdf) as an argument:
 
     $client.connect('ldap://localhost:20000/');
 
-The `connect` method can be called without arguments, in this case,
-instance's `host` and `port` values will be used. The same rule applies
-for the passed LDAP URL that does not have a port or a host specified.
+The second one takes two named arguments, `host` and `port`, both are
+optional, which set remote host and port to connect to.
+
+As both are optional, the `connect` method can be called without
+arguments, in this case, instance's `host` and `port` attribute values
+will be used. The same rule applies for the passed LDAP URL that does
+not have a port or a host specified.
 
 ```perl6
 # Defaults
@@ -97,7 +117,7 @@ $client = Cro::LDAP::Client.new(:host<remote.org/>, :port(390)).connect('ldap://
 ```
 
 As a shortcut, the `connect` method can be called on `Cro::LDAP::Client`
-object directly. In this case, the method will create a
+type object directly. In this case, the method will create a
 `Cro::LDAP::Client` instance and will use it to do a connection,
 returning the created object:
 
@@ -107,22 +127,46 @@ my $client = Cro::LDAP::Client.connect('ldap://remote.org:389');
 
 ##### Disconnecting
 
-To disconnect from the server, just call `disconnect` method:
+###### disconnect
 
 ```perl6
+method disconnect() {}
+```
+
+`Cro::LDAP::Client` forbids calling `connect` twice and throws an
+exception of type `X::Cro::LDAP::Client::DoubleConnect`. It will not
+implicitly break the connection and re-connect to the specified host.
+Instead, the `disconnect` method must be explicitly called.
+
+```perl6
+# Correct
+my $client = Cro::LDAP::Client.connect(:host<a.com>); 
+# ...
 $client.disconnect;
+$client = $client.connect(:host<b.com>); 
+# Wrong
+my $client = Cro::LDAP::Client.connect(:host<a.com>);
+# ... 
+$client = Cro::LDAP::Client.connect(:host<b.com>); # throws X::Cro::LDAP::Client::DoubleConnect
 ```
 
 ### Operations
 
 All operations must be called on a client instance that was successfully
-connected to the server, otherwise `X::Cro::LDAP::NotConnected`
-exception will be thrown. Every operation except `unbind` returns a
-promise that will be kept with either a response object, a supply of
-response objects, or broken with an exception. The `unbind` operation
+connected to the server, otherwise the `X::Cro::LDAP::NotConnected`
+exception will be thrown. Every operation except `unbind` returns 
+a promise that will be kept with either a response object, a supply of
+response objects, or is broken with an exception. The `unbind` operation
 has no return value.
 
-#### BIND
+For most of the operations, Abandon Operation can be performed, for
+details see the `abandon` method description below.
+
+#### bind
+
+```perl6
+method bind(Str :$name, :$password --> Promise) {}
+```
 
 THe `bind` method sends the authentication data to the server. As for
 now, only simple authentication mechanisms are supported:
@@ -134,6 +178,13 @@ now, only simple authentication mechanisms are supported:
 To use an anonymous authentication, no arguments are required. To use
 either unauthenticated authentication or name/password authentication,
 `name` and `password` fields can be passed.
+
+It returns a promise that resolves into a value of `BindResponse` type.
+It has all usual components of LDAP Result: `result-code`, `matched-DN`,
+`error-message` attributes and an additional attribute
+`server-sasl-creds`.
+
+This method accepts controls (see Controls section below).
 
 ```perl6
 # anonymous authentication -> name and password are empty
@@ -149,7 +200,7 @@ $client.bind(name => "foo", password => "password");
 #### UNBIND
 
 The `unbind` method sends an unbind request to the server and gracefully
-ends an underlying connection.
+ends an underlying connection. It does not return a value.
 
 ```perl6
 $client.unbind;
@@ -157,10 +208,27 @@ $client.unbind;
 
 #### SEARCH
 
+```perl6
+method search(Str :$dn!, Str :$filter!,
+              Scope :$scope = wholeSubtree,
+              DerefAliases :$deref-aliases = derefFindingBaseObj,
+              Int :$size-limit = 0, Int :$time-limit = 0,
+              Bool :$types-only = False,
+              :$attributes = Array[Str].new()) {}
+```
+
 The `search` method performs a search request and returns a `Supply`
-object that emits either `Cro::LDAP::Entry` objects for entries returned
-from the server or `Cro::LDAP::Search::Reference` objects for returned
-references.
+object that emits either `Cro::LDAP::Entry` objects representing entries
+returned from the server or `Cro::LDAP::Reference` objects for returned
+references. It takes two required named parameters `$dn` and `$filter`,
+both must be `Str` instances that represent base DN to start a search
+from and a filter to search with.
+
+Other named arguments can be passed to specify parameters for a search
+request, such as size limit, time limit and so on, with defaults
+provided.
+
+This method accepts controls (see Controls section below).
 
 ```perl6
 react {
@@ -181,8 +249,8 @@ react {
 #### MODIFY
 
 The `modify` method takes a `Str` value of the directory name of the
-entry that is modified and either a pair or array of pairs that describe
-modification operations to send.
+entry that is modified and either a pair or an array of pairs that
+describe modification operations to send.
 
 Every operation pair must be in format:
 
@@ -198,6 +266,8 @@ value must be either a `Str` (which will be converted to bytes in
 UTF-8), `Buf` (for binary data like images) or an `Array` (can contain
 both `Str` and `Buf` items).
 
+This method accepts controls (see Controls section below).
+
 ```perl6
 my @changes = add => { :type<name>, :vals(['Tester']) },
     replace => { :type<songs>, :vals(['Chase the Grain', 'Chase the Grain']) },
@@ -210,7 +280,7 @@ $client.modify("cn=modify", @changes);
 The `add` method takes a `Str` argument and an optional `Positional` of
 pairs that represent attributes to be set for the created entry.
 
-This method accepts controls.
+This method accepts controls (see Controls section below).
 
 ```perl6
 $client.add("cn=add", attrs => [:foo<bar>, :bar<1 2 3>]);
@@ -220,6 +290,8 @@ $client.add("cn=add", attrs => [:foo<bar>, :bar<1 2 3>]);
 
 The `delete` method takes a `Str` argument that specified a DN to be
 deleted.
+
+This method accepts controls (see Controls section below).
 
 ```perl6
 $client.delete("cn=Robert Jenkins,ou=People,dc=example,dc=com");
@@ -233,6 +305,8 @@ set a deletion flag for the old DN, `delete` boolean named attribute can
 be passed. It defaults to `False`. To set a new superior DN, optional
 `new-superior` named argument can be used - it must be a `Str` instance
 with value of new superior DN for the renamed entry.
+
+This method accepts controls (see Controls section below).
 
 ```perl6
 $client.modifyDN(:dn('cn=Modify Me, o=University of Life, c=US'),
@@ -252,6 +326,8 @@ The `compare` method takes three mandatory, positional arguments: a
 `Str` object that represents name of the attribute to compare and a
 `Str` object that represents a value to compare with.
 
+This method accepts controls (see Controls section below).
+
 ```perl6
 $client.compare("uid=bjensen,ou=people,dc=example,dc=com",
                 "sn", "Doe");
@@ -260,10 +336,14 @@ $client.compare("uid=bjensen,ou=people,dc=example,dc=com",
 #### ABANDON
 
 Abandon operation is called on a Promise object that is returned from
-other methods, such as `add`, and is available for a `Supply` objects
-returned too.
+other methods, such as `add` or `modifyDN`, and is available for a
+`Supply` object returned by the `search` routine too.
 
-This method accepts controls.
+It is impossible to call the `abandon` method on results of `bind`,
+`unbind` and `startTLS` (NYI) calls and
+`X::Cro::LDAP::Client::CannotAbandon` exception will be thrown.
+
+This method accepts controls (see Controls section below).
 
 ```perl6
 my $add-request = $client.add(...);
@@ -282,27 +362,27 @@ react {
 
 ### Root DSE
 
-The method `get-root-DSE` is used to obtain the `Cro::LDAP::RootDSE`
-object that contains information about server's rootDSE. It takes an
-arbitrary number of strings that represent attributes to request for.
-The attributes passed are additional to default ones:
+The method `root-DSE` is used to obtain the `Cro::LDAP::RootDSE` object
+that contains information about the server's RootDSE. It takes an
+arbitrary number of strings that represent additional attributes to
+request for. The attributes passed are additional to default ones:
 
 ```
-subschemaSubentry
-namingContexts
 altServer
+namingContexts
+supportedControl
 supportedExtension
 supportedFeatures
-supportedControl
-supportedSASLMechanisms
 supportedLDAPVersion
+supportedSASLMechanisms
+subschemaSubentry
 ```
 
 The method returns a `Cro::LDAP::RootDSE` object that contain requested
 attributes.
 
 ```perl6
-my $root = await $client.get-root-DSE('customAttribute1', 'customAttribute2');
+my $root = await $client.root-DSE('customAttribute1', 'customAttribute2');
 # Two custom attributes passed as arguments
 say $root<customAttribute1 customAttribute2>;
 # Supported versions along with other default attributes are always requested and available
@@ -311,9 +391,9 @@ say $root.supported-version;
 
 ### Server Schema
 
-To get server's schema information a named called `schema` can be used.
-A DN to use can be passed as a `Str` object argument. An object of class
-`Cro::LDAP::Schema` is returned.
+To get the server's schema information a method called `schema` can be
+used. A DN to use can be passed as a `Str` object argument. An object of
+class `Cro::LDAP::Schema` is returned.
 
 ```perl6
 my $schema = $client.schema;
@@ -335,7 +415,7 @@ instance with up to three pairs included:
 * `value` - a `Str` value for control's value, absent by default
 
 It allows for expressing any control that can be send to a server. For
-commonly used controls a predefined classes are provided, see
+some commonly used controls predefined classes are provided, see
 `Cro::LDAP::Control` page for a full list.
 
 ```perl6
@@ -346,7 +426,7 @@ my $control = Cro::LDAP::Control::DontUseCopy;
 $client.compare("uid=bjensen,ou=people,dc=example,dc=com", "sn", "Doe",
                 controls => [
                     $control,
-                    { type => "1.3.6.1.1.22", :criticality }]);
+                    { type => "1.3.6.1.1.22", :critical },]);
 # Pass a single control
 $client.compare("uid=bjensen,ou=people,dc=example,dc=com", "sn", "Doe",
                 controls => $control);
@@ -354,15 +434,17 @@ $client.compare("uid=bjensen,ou=people,dc=example,dc=com", "sn", "Doe",
 
 ### Extensions
 
-A general support for LDAP Extended Operation is provided and a set of
-specific extensions supported by `perl-ldap` package is included.
+_NOT YET IMPLEMENTED_
 
-In general case, to send an extended request a `extend` method is called
+A generic support for the LDAP Extended Operation is provided and a set
+of specific extensions is included.
+
+In  case, to send an extended request a `extend` method is called
 with two named arguments: `name` is required and represents the
 operation's LDAP OID passed as `Str` object, and `value`, which is an
-instance of a class that can be serialized using `ASN::Serializer`
-class. In case if the extended request does not include a value, it can
-be omitted.
+instance of a class that can be serialized using `ASN::Serializer` class
+from ASN::BER distribution. In case if the extended request does not
+include a value, it can be omitted.
 
 To use included extensions from `Cro::LDAP::Extension` compunit, an
 instance of particular class is constructed and passed to `extend`

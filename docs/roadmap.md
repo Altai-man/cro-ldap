@@ -23,10 +23,10 @@
 
 ##### Types
 
-- [ ] LDAPOID is constrained to numericoid
-- [ ] LDAPDN is constrained to distinguishedName
-- [ ] RelativeLDAPDN is constrained to name-component
-- [ ] AttributeDescription is constrained to attributedescription
+- [x] LDAPOID is constrained to numericoid
+- [x] LDAPDN is constrained to distinguishedName
+- [x] RelativeLDAPDN is constrained to name-component
+- [x] AttributeDescription is constrained to attributedescription
 
 ##### Messages
 
@@ -36,9 +36,9 @@
 - [x] Compare
 - [x] ModDN
 - [x] Modify
-- [ ] Search
-- [ ] Unbind
-- [ ] Abandon
+- [x] Search
+- [x] Unbind
+- [x] Abandon
 - [ ] Extended
 - [ ] StartTLS
 

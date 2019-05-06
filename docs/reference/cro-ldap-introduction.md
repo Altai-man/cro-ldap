@@ -28,8 +28,7 @@ The `Cro::LDAP` module tries to fulfill a number of goals:
 
 While we aim for the goals stated above in the first place, we are open
 to implementing other LDAP related code. Just open an issue ticket with
-a feature request and we will see how we can help. If you want to speed
-up development, a sponsoring is possible.
+a feature request and we will see how we can help.
 
 ### Structure
 
