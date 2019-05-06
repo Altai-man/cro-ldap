@@ -12,7 +12,8 @@
     "ASN::BER",
     "ASN::META",
     "OO::Monitors",
-    "Text::LDIF"
+    "Text::LDIF",
+    "Cro::LDAP::ASN::Plugin"
   ],
   "build-depends": [],
   "test-depends": [],
