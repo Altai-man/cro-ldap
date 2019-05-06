@@ -1,4 +1,5 @@
-use Cro::LDAP::Test::MockServer;
+use lib $*PROGRAM.parent.add("lib");
+use Test::MockServer;
 use Cro::LDAP::Types;
 use Cro::LDAP::Server;
 use Test;
