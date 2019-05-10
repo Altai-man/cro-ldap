@@ -1,6 +1,6 @@
 {
   "name": "Cro::LDAP",
-  "description": "LDAP support",
+  "description": "LDAPv3 support",
   "version": "0.5",
   "perl": "6.c",
   "authors": [
@@ -13,7 +13,9 @@
     "ASN::META",
     "OO::Monitors",
     "Text::LDIF",
-    "Cro::LDAP::ASN::Plugin"
+    "Cro::LDAP::ASN::Plugin",
+    "IO::Socket::Async::SSL",
+    "Cro::TLS"
   ],
   "build-depends": [],
   "test-depends": [],

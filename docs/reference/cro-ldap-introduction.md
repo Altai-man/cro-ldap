@@ -6,7 +6,10 @@ to to the implementation details.
 
 ### Purpose
 
-The `Cro::LDAP` module tries to fulfill a number of goals:
+We intend Cro::LDAP to be a quick tool for LDAPv3 support in Perl 6.
+
+Or, more officially, the `Cro::LDAP` module tries to fulfill a number of
+goals:
 
 * Provide a LDAP client (a Directory Service Agent, DSA) with interface
   similar to `Net::LDAP` module from Perl 5's `perl-ldap` distribution.
@@ -23,6 +26,10 @@ The `Cro::LDAP` module tries to fulfill a number of goals:
   write a server part with some specific purpose in mind, tying the
   backend is up to the implementor - and `Cro::LDAP` will serve the
   data.
+* We provide support for third version of LDAP, using
+  [RFC 4510](https://tools.ietf.org/pdf/rfc4510.pdf) as a source.
+  Support for second version of the protocol is not planned, but
+  eventually possible.
 
 ### Further development
 
