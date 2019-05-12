@@ -117,7 +117,7 @@ class Cro::LDAP::Client {
         my @parts = Cro::LDAP::RequestSerializer, $connector, Cro::LDAP::ResponseParser;
         my $connect-chain = Cro.compose(|@parts);
         my $in = Supplier::Preserving.new;
-        my $out = $connect-chain.establish($in.Supply, :$host, :$port, |{%ca});
+        my $out = $connect-chain.establish($in.Supply, :$host, :$port, |%ca);
         Pipeline.new(:$in, :$out, client => self);
     }
 
@@ -137,7 +137,7 @@ class Cro::LDAP::Client {
         my $socket = $is-secure ?? IO::Socket::Async::SSL !! IO::Socket::Async;
         my %ca := $ca-file ?? { :$ca-file } !! {};
 
-        $socket.connect($host-value, $port-value, |{%ca}).then(-> $promise {
+        $socket.connect($host-value, $port-value, |%ca).then(-> $promise {
             $!pipeline = self!get-pipeline($host-value, $port-value, %ca);
             self;
         });
