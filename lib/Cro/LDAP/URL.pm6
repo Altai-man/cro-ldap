@@ -7,6 +7,7 @@ use Cro::LDAP::Search;
 
 class Cro::LDAP::URL {
     has Str $.hostname;
+    has Bool $.is-secure;
     has Int $.port;
     has Str @.DN;
     has Str @.attributes;
@@ -52,11 +53,13 @@ class Cro::LDAP::URL {
         # TODO Check correctness according to RFC 4511, 4.1.2
         regex exvalue { .*? }
 
-        token prefix { :i "ldap://" }
+        token prefix { :i 'ldap' 's'? '://' }
     }
 
     class Actions {
         method TOP($/) {
+            my $is-secure = $<prefix> eq 'ldaps://';
+
             my ($scope, $filter, @attributes, @DN, @extensions) = ('base', 'objectClass=*');
             my $host = ~$<entity><host>;
             my $port = $<entity><port>;
@@ -77,6 +80,7 @@ class Cro::LDAP::URL {
             }
 
             make Cro::LDAP::URL.new:
+                    :$is-secure,
                     hostname => $host.chars ?? $host !! Str,
                     port => $port ?? $port.Int !! Int, :@DN, :@attributes,
                     :$scope, :$filter, :@extensions;

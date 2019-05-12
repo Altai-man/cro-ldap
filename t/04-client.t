@@ -26,8 +26,8 @@ sub prepare-server($host = 'localhost', $port = 3890) {
 {
     my $conn = Cro::LDAP::Client.new.connect(:host<localhost>, :port(3891));
     ok $conn ~~ Promise, "connect method returns a Promise";
-    dies-ok { await $conn };
-    ok $conn.status ~~ Broken, "connect Promise is broken if no server available";
+    dies-ok { await $conn }, "Connection dies";
+#    ok $conn.status ~~ Broken, "connect Promise is broken if no server available";
 }
 
 {
@@ -49,7 +49,6 @@ sub prepare-server($host = 'localhost', $port = 3890) {
     }, "Argument-less connect takes data from instance";
     subtest {
         lives-ok {
-
             ok (await Cro::LDAP::Client.connect(:host<localhost>, :port(3890))) ~~ Cro::LDAP::Client:D;
         }
     }, "connect can be called on Cro::LDAP::Client type object";
@@ -283,7 +282,7 @@ subtest {
 
 subtest {
     my $schema = $client.schema;
-    ok $schema ~~ Cro::LDAP::Schema, 'Got Cro::LDAP::Schema object';
+    ok $schema ~~ Cro::LDAP::Schema, 'Got Cro::LDAP::Shema object';
 }, "Schema";
 
 subtest {

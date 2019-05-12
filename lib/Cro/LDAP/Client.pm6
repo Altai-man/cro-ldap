@@ -1,4 +1,3 @@
-use OO::Monitors;
 use ASN::Types;
 use Cro::LDAP::Search;
 use Cro::LDAP::Types;
@@ -9,6 +8,9 @@ use Cro::LDAP::Schema;
 use Cro::LDAP::Entry;
 use Cro::LDAP::Reference;
 use Cro::LDAP::RootDSE;
+use Cro::TLS;
+use IO::Socket::Async::SSL;
+use OO::Monitors;
 
 class X::Cro::LDAP::Client::DoubleConnect is Exception {
     method message() { "An attempt to connect twice" }
@@ -33,7 +35,6 @@ role Abandonable[:$client, :$id] {
 class Cro::LDAP::Client {
     has $.host = 'localhost';
     has $.port = 389;
-    has IO::Socket::Async $!socket;
     has atomicint $!message-counter = 1;
 
     my monitor Pipeline {
@@ -41,9 +42,9 @@ class Cro::LDAP::Client {
         has Tap $!tap;
         has %!RESPONSE-TABLE;
         has $!lock = Lock.new;
-        has $!client;
+        has Cro::LDAP::Client $!client;
 
-        submethod BUILD(:$!in, :$out!, :$!client) {
+        submethod BUILD(Supplier :$!in, Supply :$out!, Cro::LDAP::Client :$!client) {
             $!tap = supply {
                 whenever $out -> $resp {
                     given $resp.protocol-op.key {
@@ -111,44 +112,46 @@ class Cro::LDAP::Client {
 
     has Pipeline $!pipeline;
 
-    method !get-pipeline(Str $host, Int $port --> Pipeline) {
-        my @parts = Cro::LDAP::RequestSerializer, Cro::TCP::Connector, Cro::LDAP::ResponseParser;
-        my $connector = Cro.compose(|@parts);
+    method !get-pipeline(Str $host, Int $port, %ca --> Pipeline) {
+        my $connector := %ca ?? Cro::TLS::Connector !! Cro::TCP::Connector;
+        my @parts = Cro::LDAP::RequestSerializer, $connector, Cro::LDAP::ResponseParser;
+        my $connect-chain = Cro.compose(|@parts);
         my $in = Supplier::Preserving.new;
-        my $out = $connector.establish($in.Supply, :$host, :$port);
+        my $out = $connect-chain.establish($in.Supply, :$host, :$port, |{%ca});
         Pipeline.new(:$in, :$out, client => self);
     }
 
     # Connection-related methods
 
-    multi method connect(Cro::LDAP::Client:U: Str :$host, Int :$port --> Promise) {
-        self.new.connect(:$host, :$port);
+    multi method connect(Cro::LDAP::Client:U: Str :$host, Int :$port, :$is-secure = False, :$ca-file --> Promise) {
+        self.new.connect(:$host, :$port, :$is-secure, :$ca-file);
     }
-    multi method connect(Cro::LDAP::Client:D: Str :$host, Int :$port --> Promise) {
-        with $!socket {
+    multi method connect(Cro::LDAP::Client:D: Str :$host, Int :$port, Bool :$is-secure = False, :$ca-file --> Promise) {
+        with $!pipeline {
             die X::Cro::LDAP::Client::DoubleConnect.new;
         }
 
         my $host-value = $host // $!host;
         my $port-value = $port // $!port;
 
-        IO::Socket::Async.connect($host-value, $port-value).then(-> $promise {
-            $!socket = $promise.result;
-            $!pipeline = self!get-pipeline($host-value, $port-value);
+        my $socket = $is-secure ?? IO::Socket::Async::SSL !! IO::Socket::Async;
+        my %ca := $ca-file ?? { :$ca-file } !! {};
+
+        $socket.connect($host-value, $port-value, |{%ca}).then(-> $promise {
+            $!pipeline = self!get-pipeline($host-value, $port-value, %ca);
             self;
         });
     }
-    multi method connect(Str $host --> Promise) {
+    multi method connect(Str $host, :$ca-file --> Promise) {
         my $url = Cro::LDAP::URL.parse($host);
         self.connect(
                 |(host => $url.hostname with $url.hostname),
-                |(port => $url.port with $url.port));
+                |(port => $url.port with $url.port),
+                is-secure => $url.is-secure, :$ca-file);
     }
 
     method disconnect() {
         $!pipeline.close;
-        $!socket.close;
-        $!socket = Nil;
         $!pipeline = Nil;
     }
 

@@ -1,5 +1,6 @@
 use Cro;
 use Cro::TCP;
+use Cro::TLS;
 use Cro::Service;
 use Cro::LDAP::Types;
 use Cro::LDAP::Worker;
@@ -36,8 +37,13 @@ class Cro::LDAP::Server does Cro::Service {
         }
     }
 
-    only method new(:$server!, :$host!, :$port!, :$label = "LDAP($port)") {
-        my $listener = Cro::TCP::Listener.new(:$host, :$port);
+    only method new(:$server!, :$host!, :$port!, :$label = "LDAP($port)", :%tls) {
+        my $listener;
+        if %tls {
+            $listener = Cro::TLS::Listener.new(:$host, :$port, |%tls);
+        } else {
+            $listener = Cro::TCP::Listener.new(:$host, :$port);
+        }
         my $transformer = LDAPTransformer.new(:$server);
         Cro.compose(service-type => self.WHAT,
                 :$label,
