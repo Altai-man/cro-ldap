@@ -1,8 +1,8 @@
 use ASN::Types;
 use Cro::LDAP::Search;
 use Cro::LDAP::Types;
-use Cro::LDAP::RequestSerializer;
-use Cro::LDAP::ResponseParser;
+use Cro::LDAP::MessageSerializer;
+use Cro::LDAP::MessageParser;
 use Cro::LDAP::URL;
 use Cro::LDAP::Schema;
 use Cro::LDAP::Entry;
@@ -114,7 +114,7 @@ class Cro::LDAP::Client {
 
     method !get-pipeline(Str $host, Int $port, %ca --> Pipeline) {
         my $connector := %ca ?? Cro::TLS::Connector !! Cro::TCP::Connector;
-        my @parts = Cro::LDAP::RequestSerializer, $connector, Cro::LDAP::ResponseParser;
+        my @parts = Cro::LDAP::MessageSerializer, $connector, Cro::LDAP::MessageParser;
         my $connect-chain = Cro.compose(|@parts);
         my $in = Supplier::Preserving.new;
         my $out = $connect-chain.establish($in.Supply, :$host, :$port, |%ca);

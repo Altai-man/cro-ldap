@@ -4,8 +4,8 @@ use Cro::TLS;
 use Cro::Service;
 use Cro::LDAP::Types;
 use Cro::LDAP::Worker;
-use Cro::LDAP::RequestParser;
-use Cro::LDAP::ResponseSerializer;
+use Cro::LDAP::MessageParser;
+use Cro::LDAP::MessageSerializer;
 
 class Cro::LDAP::Server does Cro::Service {
     my class LDAPTransformer does Cro::Transform {
@@ -48,9 +48,9 @@ class Cro::LDAP::Server does Cro::Service {
         Cro.compose(service-type => self.WHAT,
                 :$label,
                 $listener,
-                Cro::LDAP::RequestParser,
+                Cro::LDAP::MessageParser,
                 $transformer,
-                Cro::LDAP::ResponseSerializer.new);
+                Cro::LDAP::MessageSerializer);
 
     }
 }
