@@ -446,7 +446,7 @@ instance of a class that can be serialized using `ASN::Serializer` class
 from ASN::BER distribution. In case if the extended request does not
 include a value, it can be omitted.
 
-To use included extensions from `Cro::LDAP::Extension` compunit, an
+To use extensions from `Cro::LDAP::Extension` compunit, an
 instance of particular class is constructed and passed to `extend`
 method. A listing of supported extensions and their interfaces is
 described in `Cro::LDAP::Extension` compunit documentation.
