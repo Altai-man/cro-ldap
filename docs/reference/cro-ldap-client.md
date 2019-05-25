@@ -339,9 +339,9 @@ Abandon operation is called on a Promise object that is returned from
 other methods, such as `add` or `modifyDN`, and is available for a
 `Supply` object returned by the `search` routine too.
 
-It is impossible to call the `abandon` method on results of `bind`,
-`unbind` and `startTLS` (NYI) calls and
-`X::Cro::LDAP::Client::CannotAbandon` exception will be thrown.
+It is impossible to call the `abandon` method on result of `bind` call,
+in this case `X::Cro::LDAP::Client::CannotAbandon` exception will be
+thrown.
 
 This method accepts controls (see Controls section below).
 
