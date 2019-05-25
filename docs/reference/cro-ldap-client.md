@@ -235,7 +235,7 @@ react {
     whenever $client.search(dn => 'c=foo',
                             filter => '(sn:dn:2.4.6.8.10:=Barney Rubble)') {
         when Cro::LDAP::Entry { say $_ }
-        when Cro::LDAP::Search::Reference { say $_ }
+        when Cro::LDAP::Reference { say $_ }
 
         LAST { say "No more entries!" }
         QUIT {
