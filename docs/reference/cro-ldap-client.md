@@ -61,7 +61,7 @@ my $client = Cro::LDAP::Client.new;
 
 If the same object won't be re-used with different remote hosts, `host`
 and `port` parameters can be passed: default values are `localhost` and
-`389` respectedly.
+`389` respectively.
 
 ###### connect
 
