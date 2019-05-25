@@ -5,7 +5,7 @@ use Cro::LDAP::Types;
 use Cro::LDAP::Server;
 use Cro::LDAP::Client;
 
-plan *;
+plan 2;
 
 my %tls = private-key-file => 't/fake-keys/server-key.pem',
           certificate-file => 't/fake-keys/server-crt.pem';
@@ -33,5 +33,3 @@ react {
 }
 
 $client.disconnect;
-
-done-testing;
