@@ -12,6 +12,12 @@ use Cro::TLS;
 use IO::Socket::Async::SSL;
 use OO::Monitors;
 
+class X::Cro::LDAP::Client::CannotAbandon is Exception {
+    has Str $.op;
+
+    method message() { "Cannot abandon ($!op) operation" }
+}
+
 class X::Cro::LDAP::Client::DoubleConnect is Exception {
     method message() { "An attempt to connect twice" }
 }
@@ -28,8 +34,14 @@ class X::Cro::LDAP::Client::UnrecognizedFilter {
     method message() { "Filter pattern $!str was not recognized" }
 }
 
-role Abandonable[:$client, :$id] {
-    method abandon { $client.abandon($id) }
+role Abandonable {
+    method abandon { die X::Cro::LDAP::Client::CannotAbandon.new(:op<BIND>) }
+}
+
+role Abandonable[$client, $id] {
+    method abandon {
+        $client.abandon($id)
+    }
 }
 
 class Cro::LDAP::Client {
@@ -71,13 +83,13 @@ class Cro::LDAP::Client {
                 when $type eq 'searchRequest' {
                     my $entries = Supplier.new;
                     %!RESPONSE-TABLE{$request.message-id} = $entries;
-                    $entries.Supply but Abandonable[client => $!client, id => $request.message-id];
+                    $entries.Supply but Abandonable[$!client, $request.message-id];
                 }
                 # Normal methods return a Promise
                 default {
                     my $promise = $type eq 'bindRequest' ??
-                            Promise.new !!
-                            Promise.new but Abandonable[client => $!client, id => $request.message-id];
+                            Promise.new but Abandonable !!
+                            Promise.new but Abandonable[$!client, $request.message-id];
                     %!RESPONSE-TABLE{$request.message-id} = $promise;
                 }
             }

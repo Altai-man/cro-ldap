@@ -266,6 +266,10 @@ subtest {
     lives-ok { $single-resp.abandon }, "Abandon method is callable on supply";
     await Promise.anyof(Promise.in(5), $abandon-supply-p);
     is $abandon-supply-p.status, Kept, "Abandon request was sent for search supply";
+
+    my $bind-request = $client.bind;
+    throws-like { $bind-request.abandon },
+        X::Cro::LDAP::Client::CannotAbandon, message => /'BIND'/;
 }, "Abandon operation";
 
 # ROOT DSE
