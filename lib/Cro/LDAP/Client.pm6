@@ -144,7 +144,7 @@ class Cro::LDAP::Client {
         }
 
         my $host-value = $host // $!host;
-        my $port-value = $port // $!port;
+        my $port-value = $port // $is-secure ?? 636 !! $!port;
 
         my $socket = $is-secure ?? IO::Socket::Async::SSL !! IO::Socket::Async;
         my %ca := $ca-file ?? { :$ca-file } !! {};
