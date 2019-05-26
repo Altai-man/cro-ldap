@@ -150,6 +150,42 @@ my $client = Cro::LDAP::Client.connect(:host<a.com>);
 $client = Cro::LDAP::Client.connect(:host<b.com>); # throws X::Cro::LDAP::Client::DoubleConnect
 ```
 
+### Security
+
+#### LDAPS
+
+LDAPS means using normal LDAP communication over TLS layer established
+beforehand.
+
+To enable usage of LDAPS, just pass a LDAP URL to `connect` that uses
+`ldaps` protocol instead of `ldap`:
+
+```perl6
+my $client = await Cro::LDAP::Client.connect("ldaps://localhost:3894");
+```
+
+Custom Certificate Authority file can be passed in the same manner as it
+is done in Cro::HTTP distribution, just pass a path to Certificate
+Authority PEM file as a named parameter:
+
+```perl6
+my $client = await Cro::LDAP::Client.connect("ldaps://localhost:3894", :$ca-file);
+```
+
+If you are using a `connect` call with host and port passed separately,
+you can specify `$is-secure` named `Bool` argument:
+
+```perl6
+my $client = await Cro::LDAP::Client.connect(host => "a", port => 6260, :is-secure);
+```
+
+The default port for LDAPS connection is 626, which is automatically
+ used when `:$is-secure` is enabled and no port value specified.
+
+#### StartTLS
+
+Not yet implemented.
+
 ### Operations
 
 All operations must be called on a client instance that was successfully
