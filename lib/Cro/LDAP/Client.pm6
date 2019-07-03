@@ -96,15 +96,20 @@ class Cro::LDAP::Client {
         }
 
         method !post-process($response) {
+            CATCH {
+                default {
+                    .note;
+                }
+            }
             given $response {
                 when SearchResultEntry {
                     my %attributes;
-                    for @($response.attributes) -> $attr {
+                    for $response.attributes.seq<> -> $attr {
                         my $values = $attr.vals.keys;
-                        %attributes{$attr.type} = $values.elems == 1 ?? $values[0] !! $values;
+                        %attributes{$attr.type.decode} = $values.elems == 1 ?? $values[0] !! $values.Array;
                     }
                     return Cro::LDAP::Entry.new(
-                            dn => $response.object-name,
+                            dn => $response.object-name.decode,
                             :%attributes);
                 }
                 when SearchResultReference {
@@ -144,7 +149,7 @@ class Cro::LDAP::Client {
         }
 
         my $host-value = $host // $!host;
-        my $port-value = $port // $is-secure ?? 636 !! $!port;
+        my $port-value = $port // ($is-secure ?? 636 !! $!port);
 
         my $socket = $is-secure ?? IO::Socket::Async::SSL !! IO::Socket::Async;
         my %ca := $ca-file ?? { :$ca-file } !! {};
@@ -174,7 +179,7 @@ class Cro::LDAP::Client {
 
         self!wrap-request({
             my $authentication = AuthenticationChoice.new($password ~~ Str ??
-                    simple => ASN::Types::OctetString.new($password) !!
+                    simple => $password !!
                     sasl => SaslCredentials.new(|$password));
             BindRequest.new(version => 3, :$name, :$authentication);
         }, :@controls);
@@ -190,13 +195,13 @@ class Cro::LDAP::Client {
         die X::Cro::LDAP::Client::NotConnected.new(:op<add>) unless self;
 
         self!wrap-request({
-            my $attributes = Array[AttributeListBottom].new;
+            my @attributes;
             for @@attrs {
-                $attributes.push: AttributeListBottom.new(
+                @attributes.push: AttributeListBottom.new(
                         type => .key,
                         vals => ASNSetOf[ASN::Types::OctetString].new(.value));
             }
-            AddRequest.new(entry => $dn, :$attributes);
+            AddRequest.new(entry => $dn, attributes => ASNSequenceOf[AttributeListBottom].new(seq => @attributes));
         }, :@controls);
     }
 
@@ -228,7 +233,10 @@ class Cro::LDAP::Client {
             my $modification = AttributeTypeAndValues.new(type => $change.value<type>, vals => ASNSetOf[ASN::Types::OctetString].new(|($change.value<vals> // ())));
             @modification.push: ModificationBottom.new(operation => %MODS{$change.key}, :$modification);
         }
-        self!wrap-request({ ModifyRequest.new(:$object, :@modification) }, :@controls);
+        self!wrap-request({
+            my $modification = ASNSequenceOf[ModificationBottom].new(seq => @modification);
+            ModifyRequest.new(:$object, :$modification)
+        }, :@controls);
     }
 
     method modifyDN(:$dn!, :$new-dn!, :$delete = True, :$new-superior, :@controls) {
@@ -248,7 +256,7 @@ class Cro::LDAP::Client {
             DerefAliases :$deref-aliases = derefFindingBaseObj,
             Int :$size-limit = 0, Int :$time-limit = 0,
             Bool :$types-only = False,
-            :$attributes = Array[Str].new(), :@controls) {
+            :$attributes = ASNSequenceOf[Any].new(seq => []), :@controls) {
         die X::Cro::LDAP::Client::NotConnected.new(:op<search>) unless self;
 
         $filter = '(' ~ $filter unless $filter.starts-with('(');
@@ -274,8 +282,8 @@ class Cro::LDAP::Client {
         my @defs = <altServer namingContexts supportedControl
                     supportedExtension supportedFeatures supportedLDAPVersion
                     supportedSASLMechanisms subschemaSubentry>;
-        my $attributes = Array[Str].new(|@defs);
-        $attributes.push: $_ for @attrs;
+        @defs.push: $_ for @attrs;
+        my $attributes = ASNSequenceOf[Any].new(seq => @defs);
 
         my $entry = await self.search(:dn(''), :filter<(objectclass=*)>, :$attributes);
         Cro::LDAP::RootDSE.new($entry.attributes);
@@ -283,7 +291,7 @@ class Cro::LDAP::Client {
 
     method schema(Str $dn?) {
         my $base = $dn // self.root-DSE()<subschemaSubentry> // 'cn=schema';
-        my $attributes = Array[Str].new(
+        my $attributes = ASNSequenceOf[Any].new(seq =>
                 <objectClasses attributeTypes matchingRules matchingRuleUse
                  dITStructureRules dITContentRules nameForms
                  ldapSyntaxes extendedAttributeInfo>);
@@ -302,28 +310,29 @@ class Cro::LDAP::Client {
     }
 
     method !wrap-with-envelope($request, :controls(@raw-controls)) {
-        my @controls := self!process-controls(@raw-controls);
+        my $controls = self!process-controls(@raw-controls);
         my $message-id = $!message-counter⚛++;
         my $choice = $request.^name.subst(/(\w)/, *.lc, :1st);
         $choice = 'modDNRequest' if $request ~~ ModifyDNRequest;
-        Cro::LDAP::Message.new(:$message-id, protocol-op => ProtocolOp.new(($choice => $request)), :@controls);
+        Cro::LDAP::Message.new(:$message-id, protocol-op => ProtocolOp.new(($choice => $request)), :$controls);
     }
+
     method !process-controls(@raw-controls) {
-        my @controls := Array[Control].new;
+        my @seq;
         for @raw-controls {
             when Control {
-                @controls.push: $_;
+                @seq.push: $_;
             }
             when Associative {
                 my $control = Control.new(control-type => $_<type>,
                         criticality => $_<critical> // False,
                         control-value => $_<value> // Str);
-                @controls.push: $control;
+                @seq.push: $control;
             }
             default {
                 warn "Expected Control or Associative, encountered $_.^name() instead, skipping";
             }
         }
-        @controls;
+        ASNSequenceOf[Control].new(:@seq);
     }
 }
