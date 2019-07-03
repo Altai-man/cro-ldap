@@ -13,7 +13,6 @@
     "ASN::META",
     "OO::Monitors",
     "Text::LDIF",
-    "Cro::LDAP::ASN::Plugin",
     "IO::Socket::Async::SSL",
     "Cro::TLS"
   ],
