@@ -10,13 +10,13 @@ plan *;
 my Cro::Service $server = Cro::LDAP::Server.new(
         server => MockLDAPWorker.new,
         :host('localhost'),
-        :20000port);
+        :20005port);
 $server.start;
 END $server.stop;
 
 my $client = Cro::LDAP::Client.new;
 
-await $client.connect(:host<localhost>, :port(20000));
+await $client.connect(:host<localhost>, :port(20005));
 # "Foo" name, simple authentication used
 given await $client.bind(name => "Foo") -> $resp {
     ok $resp ~~ BindResponse, 'Got Response::Bind object';
