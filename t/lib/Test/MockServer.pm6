@@ -15,15 +15,15 @@ class MockLDAPWorker does Cro::LDAP::Worker {
         my $error-message;
         my $result-code = success;
 
-        if $req.name eq "" {
+        if $req.name.elems == 0 {
             $error-message = "Anonymous bind";
-        } elsif $req.authentication.value.value eq "" {
+        } elsif $req.authentication.value.elems == 0 {
             $error-message = "Unauthenticated bind";
         } else {
             $error-message = "Normal bind";
         }
 
-        if $req.name eq "dn=no-more" {
+        if $req.name.decode eq "dn=no-more" {
             $result-code = busy;
         }
 
@@ -36,10 +36,10 @@ class MockLDAPWorker does Cro::LDAP::Worker {
         # Special test data can be obtained with controls passed
         with @controls {
             for @controls -> $control {
-                if $control.control-type eq "1.3.6.1.1.22" && $control.criticality {
+                if $control.control-type.decode eq "1.3.6.1.1.22" && $control.criticality {
                     return AddResponse.new(
                             result-code => compareFalse,
-                            matched-dn => $req.entry.comb.reverse.join,
+                            matched-dn => $req.entry.decode.comb.reverse.join,
                             error-message => '');
                 }
             }
@@ -48,7 +48,7 @@ class MockLDAPWorker does Cro::LDAP::Worker {
         AddResponse.new(
                 result-code => compareTrue,
                 matched-dn => $req.entry,
-                error-message => [~] $req.attributes.map({ "$_.type()$_.vals()" }));
+                error-message => [~] $req.attributes.seq.map({ "$_.type().decode()$_.vals().map(*.key.decode).Set()" }));
     }
 
     method delete($req, :@controls) {
@@ -56,19 +56,19 @@ class MockLDAPWorker does Cro::LDAP::Worker {
     }
 
     method compare($req, :@controls) {
-        my $error-message = "$req.ava().attribute-desc()=$req.ava().assertion-value()";
+        my $error-message = "$req.ava().attribute-desc().decode()=$req.ava().assertion-value().decode()";
         CompareResponse.new(result-code => compareTrue, matched-dn => $req.entry, :$error-message)
     }
 
     method modify($req, :@controls) {
         my $error-message;
-        for @($req.modification) {
+        for $req.modification.seq<> {
             given .operation -> $mod {
                 $error-message ~= "add" when $mod ~~ add;
                 $error-message ~= "replace" when $mod ~~ replace;
                 $error-message ~= "delete" when $mod ~~ delete;
-                $error-message ~= .modification.type;
-                $error-message ~= [~] .modification.vals;
+                $error-message ~= .modification.type.decode;
+                $error-message ~= [~] .modification.vals.map(*.key.decode).Set;
             }
 
         }
@@ -82,12 +82,12 @@ class MockLDAPWorker does Cro::LDAP::Worker {
 
     method search($req, :@controls) {
         supply {
-            if $req.base-object eq "" {
+            if $req.base-object.elems == 0 {
                 emit (searchResEntry => SearchResultEntry.new(object-name => "",
-                    attributes => Array[PartialAttributeListBottom].new(
+                    attributes => ASNSequenceOf[PartialAttributeListBottom].new(seq => [
                             PartialAttributeListBottom.new(type => "supportedExtension", vals => ASNSetOf[ASN::Types::OctetString].new("1.3.6.1.4.1.4203.1.11.1")),
-                                    PartialAttributeListBottom.new(type => "customAttr1", vals => ASNSetOf[ASN::Types::OctetString].new("foo")),
-                                    PartialAttributeListBottom.new(type => "customAttr2", vals => ASNSetOf[ASN::Types::OctetString].new("bar"))
+                            PartialAttributeListBottom.new(type => "customAttr1", vals => ASNSetOf[ASN::Types::OctetString].new("foo")),
+                            PartialAttributeListBottom.new(type => "customAttr2", vals => ASNSetOf[ASN::Types::OctetString].new("bar"))]
                     )));
                 emit (searchResDone => SearchResultDone.new(
                     result-code => success,
@@ -99,9 +99,9 @@ class MockLDAPWorker does Cro::LDAP::Worker {
             my $i = 1;
             $i = 10 if $req.filter.key ~~ 'present'|'substrings';
             emit (searchResEntry => SearchResultEntry.new(object-name => "foo",
-                    attributes => Array[PartialAttributeListBottom].new(
+                    attributes => ASNSequenceOf[PartialAttributeListBottom].new(seq => [
                             PartialAttributeListBottom.new(type => "first", vals => ASNSetOf[ASN::Types::OctetString].new("Epsilon", "Solution")),
-                            PartialAttributeListBottom.new(type => "second", vals => ASNSetOf[ASN::Types::OctetString].new("Gamma", "Narberal"))
+                            PartialAttributeListBottom.new(type => "second", vals => ASNSetOf[ASN::Types::OctetString].new("Gamma", "Narberal"))]
                     ))) for ^$i;
 
 
