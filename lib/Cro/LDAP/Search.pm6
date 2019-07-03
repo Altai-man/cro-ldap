@@ -90,10 +90,10 @@ class Cro::LDAP::Search::Actions {
     method substring($/) {
         make (substrings => SubstringFilter.new(
                 type => $<attr>.made,
-                substrings => Array[SubstringsBottom].new(
+                substrings => ASNSequenceOf[SubstringsBottom].new(seq => [
                     |(SubstringsBottom.new((initial => ASN::Types::OctetString.new(~$_))) with $<initial>),
                     |$<any>.made,
-                    |(SubstringsBottom.new((final => ASN::Types::OctetString.new(~$_))) with $<final>))
+                    |(SubstringsBottom.new((final => ASN::Types::OctetString.new(~$_))) with $<final>)])
                 ));
     }
 
@@ -102,7 +102,11 @@ class Cro::LDAP::Search::Actions {
         for @($<assertionValue>) -> $item {
             @results.push: SubstringsBottom.new((any => ASN::Types::OctetString.new(~$item)));
         }
-        make Array[SubstringsBottom](@results);
+        if @results.elems {
+            make ASNSequenceOf[SubstringsBottom].new(seq => @results);
+        } else {
+            make ();
+        }
     }
 
     method attr($/) { make ~$/ }
