@@ -154,10 +154,8 @@ class Cro::LDAP::Client {
         my $socket = $is-secure ?? IO::Socket::Async::SSL !! IO::Socket::Async;
         my %ca := $ca-file ?? { :$ca-file } !! {};
 
-        $socket.connect($host-value, $port-value, |%ca).then(-> $promise {
-            $!pipeline = self!get-pipeline($host-value, $port-value, %ca);
-            self;
-        });
+        $!pipeline = self!get-pipeline($host-value, $port-value, %ca);
+        Promise.kept(self);
     }
     multi method connect(Str $host, :$ca-file --> Promise) {
         my $url = Cro::LDAP::URL.parse($host);
