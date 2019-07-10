@@ -1,4 +1,4 @@
-use lib $*PROGRAM.parent.add("lib");
+use lib $*PROGRAM.parent.add("../t/lib");
 use Test::MockServer;
 use Cro::LDAP::Types;
 use Cro::LDAP::Server;
@@ -55,21 +55,19 @@ test-command("ldapdelete",
 # compare
 test-command("ldapcompare",
         args => <uid=bjensen,ou=people,dc=example,dc=com sn:smith>,
-        checks => [* eq "TRUE\n"]);
+        checks => [* ~~ /"TRUE\n"/]);
 
+# modrdn
 test-command("ldapmodrdn",
         args => ["-r", "-s", "cn=Robert Jenkins,ou=People,dc=example,dc=com", "cn=Modify Me, o=University of Life, c=US", "cn=The New Me"],
-        checks => [* eq ""]);
+        checks => [* ~~ / Success /]);
 
-# Modify
-
+# search
 test-command("ldapsearch",
         args => <-b o=it-sudparis,c=eu>,
         checks => [* ~~ /'result: 0 Success'/,
         * ~~ /'search: 2'/,
         * ~~ /'first: Epsilon'/,
         * ~~ /'second: Narberal'/]);
-
-# Ext
 
 done-testing;
