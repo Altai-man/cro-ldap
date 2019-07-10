@@ -22,12 +22,12 @@ my $ca-file = 't/fake-keys/ca-crt.pem';
 
 my $client = await Cro::LDAP::Client.connect("ldaps://localhost:3894", :$ca-file);
 
-given await $client.bind(name => "cn=serviceuser,ou=svcaccts,dc=glauth,dc=com", password => "mysecret") -> $resp {
+given await $client.bind(name => "dc=org,dc=com", password => "mysecret") -> $resp {
     is $resp.result-code, success, "Got correct bind code";
 }
 
 react {
-    whenever $client.search(dn => "dc=glauth,dc=com", filter => "cn=hackers") -> $res {
+    whenever $client.search(dn => "dc=org,dc=com", filter => "cn=hackers") -> $res {
         is $res.dn, "foo", "Correct dummy DN";
     }
 }
