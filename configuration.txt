@@ -1,3 +1,0 @@
-Admin password: nonaDefau1tPassk#
-Admin DN: dn: cn=admin,dc=localdomain
-dn: uid=cro,ou=people,dc=localdomain
