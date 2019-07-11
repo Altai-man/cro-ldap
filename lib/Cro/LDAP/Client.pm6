@@ -141,6 +141,7 @@ class Cro::LDAP::Client {
     # Connection-related methods
 
     multi method connect(Cro::LDAP::Client:U: Str :$host, Int :$port, :$is-secure = False, :$ca-file --> Promise) {
+
         self.new.connect(:$host, :$port, :$is-secure, :$ca-file);
     }
     multi method connect(Cro::LDAP::Client:D: Str :$host, Int :$port, Bool :$is-secure = False, :$ca-file --> Promise) {
@@ -166,6 +167,7 @@ class Cro::LDAP::Client {
     }
 
     method disconnect() {
+        self.unbind;
         $!pipeline.close;
         $!pipeline = Nil;
     }
@@ -187,6 +189,7 @@ class Cro::LDAP::Client {
         die X::Cro::LDAP::Client::NotConnected.new(:op<unbind>) unless self;
 
         self!wrap-request({ UnbindRequest.new });
+        self.disconnect;
     }
 
     method add($dn, :@attrs, :@controls) {
