@@ -105,8 +105,8 @@ throws-like { Cro::LDAP::Client.modifyDN(dn => "", new-dn => "") }, X::Cro::LDAP
         message => /'modify DN'/, "Cannot modify DN when no connection";
 throws-like { Cro::LDAP::Client.compare("cn=cmp", "a", "b") }, X::Cro::LDAP::Client::NotConnected,
         message => /'compare'/, "Cannot compare when no connection";
-throws-like { Cro::LDAP::Client.extend(Int) }, X::Cro::LDAP::Client::NotConnected,
-        message => /'extended'/, "Cannot send Extended Request when no connection";
+#throws-like { Cro::LDAP::Client.extend(Int) }, X::Cro::LDAP::Client::NotConnected,
+#        message => /'extended'/, "Cannot send Extended Request when no connection";
 
 # Checkers for unusual operations
 
@@ -116,8 +116,8 @@ my $abandon-supply-p = Promise.new;
 
 my @CHECKS = [
     (* ~~ UnbindRequest, $unbind-p),
-    (* ~~ 15, $abandon-promise-p),
-    (* ~~ 17, $abandon-supply-p)
+    (* ~~ 14, $abandon-promise-p),
+    (* ~~ 16, $abandon-supply-p)
 ];
 
 my Cro::Service $server = Cro::LDAP::Server.new(
@@ -154,11 +154,11 @@ subtest {
     is $resp.result-code, busy, "Returned correct result code";
 }, "Bind request-response";
 
-subtest {
-    $client.unbind;
-    await Promise.anyof(Promise.in(5), $unbind-p);
-    is $unbind-p.status, Kept, "Unbind request was sent";
-}, "Unbind request";
+#subtest {
+#    $client.unbind;
+#    await Promise.anyof(Promise.in(5), $unbind-p);
+#    is $unbind-p.status, Kept, "Unbind request was sent";
+#}, "Unbind request";
 
 # SEARCH
 subtest {
