@@ -152,7 +152,6 @@ class Cro::LDAP::Client {
         my $host-value = $host // $!host;
         my $port-value = $port // ($is-secure ?? 636 !! $!port);
 
-        my $socket = $is-secure ?? IO::Socket::Async::SSL !! IO::Socket::Async;
         my %ca := $ca-file ?? { :$ca-file } !! {};
 
         $!pipeline = self!get-pipeline($host-value, $port-value, %ca);
@@ -166,10 +165,12 @@ class Cro::LDAP::Client {
                 is-secure => $url.is-secure, :$ca-file);
     }
 
-    method disconnect() {
-        self.unbind;
-        $!pipeline.close;
-        $!pipeline = Nil;
+    method disconnect(Bool :$unbind = True) {
+        self.unbind if $unbind;
+        with $!pipeline {
+            $!pipeline.close;
+            $!pipeline = Nil;
+        }
     }
 
     # Operations
@@ -189,7 +190,7 @@ class Cro::LDAP::Client {
         die X::Cro::LDAP::Client::NotConnected.new(:op<unbind>) unless self;
 
         self!wrap-request({ UnbindRequest.new });
-        self.disconnect;
+        self.disconnect(:!unbind);
     }
 
     method add($dn, :@attrs, :@controls) {
@@ -301,8 +302,20 @@ class Cro::LDAP::Client {
         Cro::LDAP::Schema.new($entry.attributes);
     }
 
-    method extend($message) {
+    method extend(Str $request-name, $value?) {
         die X::Cro::LDAP::Client::NotConnected.new(:op<extended>) unless self;
+
+        my $p = self!wrap-request({ ExtendedRequest.new(:$request-name, request-value => $value) });
+        my $res = await $p;
+        unless $res.result-code eq success {
+            return $res;
+        }
+
+        #self!wrap-request({  })
+    }
+
+    method startTLS() {
+        self.extend("1.3.6.1.4.1.1466.20037");
     }
 
     method !wrap-request(&make-message, :@controls) {
@@ -315,6 +328,7 @@ class Cro::LDAP::Client {
         my $message-id = $!message-counter⚛++;
         my $choice = $request.^name.subst(/(\w)/, *.lc, :1st);
         $choice = 'modDNRequest' if $request ~~ ModifyDNRequest;
+        $choice = 'extendedReq' if $request ~~ ExtendedRequest;
         Cro::LDAP::Message.new(:$message-id, protocol-op => ProtocolOp.new(($choice => $request)), :$controls);
     }
 
