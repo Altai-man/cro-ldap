@@ -136,14 +136,24 @@ method disconnect() {}
 `Cro::LDAP::Client` forbids calling `connect` twice and throws an
 exception of type `X::Cro::LDAP::Client::DoubleConnect`. It will not
 implicitly break the connection and re-connect to the specified host.
-Instead, the `disconnect` method must be explicitly called.
+
+In most cases you want to call `unbind` method that sends an Unbind
+message to the server and terminates the connection. When it is for some
+reasons not desired, the `disconnect` method can be used to forcibly terminate a session.
 
 ```perl6
 # Correct
 my $client = Cro::LDAP::Client.connect(:host<a.com>); 
 # ...
+$client.unbind;
+$client = $client.connect(:host<b.com>);
+
+# Correct if you don't want unbind message
+$client = Cro::LDAP::Client.connect(:host<a.com>);
+# ...
 $client.disconnect;
-$client = $client.connect(:host<b.com>); 
+$client = $client.connect(:host<b.com>);
+
 # Wrong
 my $client = Cro::LDAP::Client.connect(:host<a.com>);
 # ... 
