@@ -1,3 +1,4 @@
+use Cro::LDAP::Extension;
 use Cro::LDAP::Client;
 use Test;
 
@@ -22,6 +23,12 @@ react {
         note "Closing...";
     }
 }
+
+note await $ldap.extend(Cro::LDAP::Extension::WhoAmI.new);
+
+note $ldap.extend("1.3.6.1.4.1.4203.1.11.3").result.response.decode;
+
+$ldap.unbind;
 
 # TODO
 

@@ -480,25 +480,47 @@ $client.compare("uid=bjensen,ou=people,dc=example,dc=com", "sn", "Doe",
 
 ### Extensions
 
-_NOT YET IMPLEMENTED_
+A support for the LDAP Extended Operation is provided and a set
+of extensions is provided "out of the box".
 
-A generic support for the LDAP Extended Operation is provided and a set
-of specific extensions is included.
+To send an extended request the `extend` method is called.
+It has two forms: automatic and manual processing.
 
-In  case, to send an extended request a `extend` method is called
-with two named arguments: `name` is required and represents the
-operation's LDAP OID passed as `Str` object, and `value`, which is an
-instance of a class that can be serialized using `ASN::Serializer` class
-from ASN::BER distribution. In case if the extended request does not
-include a value, it can be omitted.
+To execute a response, create an object of a class
+provided by Cro::LDAP itself or third-party extensions
+and pass it to the `extend` method. This object's data will be used to
+send an extended request of specified format, a response will be received
+and a specific handler of the extended operation class then gets called
+with the response. Result of this call, if any (True otherwise), completes
+the `Promise` object that is returned as a result value of the `extend` method.
 
-To use extensions from `Cro::LDAP::Extension` compunit, an
-instance of particular class is constructed and passed to `extend`
-method. A listing of supported extensions and their interfaces is
-described in `Cro::LDAP::Extension` compunit documentation.
+```perl6
+use Cro::LDAP::Extension;
+
+my $name = await $client.extend(Cro::LDAP::Extension::WhoAmI);
+note $name;
+```
+
+The second form of the `extend` method takes
+two arguments: first one is required and represents the
+operation's LDAP OID passed as a `Str` object, and optional second argument,
+representing extended request value, which is a `Buf` that contains
+serialized value of the extended operation request according to ASN.1 rules
+used in LDAP. This method returns a `Promise` object that is either
+broken with an `X::Cro::LDAP::Client::UnsuccessfulExtended` exception or is kept
+with `ExtendedResponse` object for client code to process it manually.
+
+The `X::Cro::LDAP::Client::UnsuccessfulExtended` exception contains `$.response`
+attribute with `ExtendedResponse` object assigned.
+
+Manual processing allows user to handle the process directly. It includes:
+
+* Passing the extended operation request name and value (if any) to the `extend` method.
+* Receiving and decoding a response object.
 
 ```perl6
 use ASN::Types;
+use ASN::Serializer;
 
 class CancelRequestValue does ASNSequence {
     has Int $.cancelID is required;
@@ -506,15 +528,16 @@ class CancelRequestValue does ASNSequence {
     method ASN-order { <$!cancelID> }
 }
 
-my $cancelValue = CanceLRequestValue.new(cancelID => 65);
+my $cancel-value = CancelRequestValue.new(cancelID => 65);
 
-my $resp = await $client.extend(
-    name => "1.3.6.1.1.8",
-    value => $cancelValue
-);
-
-# Or, if using an included type, just
-use Cro::LDAP::Extension;
-
-my $resp = await $client.extend(Cro::LDAP::Extension::Cancel.new(65));
+my $op-name = "1.3.6.1.1.8";
+my $op-value = ASN::Serializer.serialize($cancel-value);
+my $resp = await $client.extend($op-name, $op-value);
+# process $resp...
+with $resp.response-name {
+    say "Response name is ", $_.decode; # $.response-name is Buf
+}
+with $resp.response {
+    ...
+}
 ```

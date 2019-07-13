@@ -1,4 +1,5 @@
 use ASN::Types;
+use Cro::LDAP::Extension;
 use Cro::LDAP::Search;
 use Cro::LDAP::Types;
 use Cro::LDAP::MessageSerializer;
@@ -32,6 +33,12 @@ class X::Cro::LDAP::Client::UnrecognizedFilter {
     has Str $.str;
 
     method message() { "Filter pattern $!str was not recognized" }
+}
+
+class X::Cro::LDAP::Client::UnsuccessfulExtended {
+    has ExtendedResponse $.response;
+
+    method message() { "Was not able to process extended operation result, check Response object" }
 }
 
 role Abandonable {
@@ -302,19 +309,29 @@ class Cro::LDAP::Client {
         Cro::LDAP::Schema.new($entry.attributes);
     }
 
-    method extend(Str $request-name, $value?) {
+    multi method extend(Cro::LDAP::Extension $op) {
         die X::Cro::LDAP::Client::NotConnected.new(:op<extended>) unless self;
 
-        my $p = self!wrap-request({ ExtendedRequest.new(:$request-name, request-value => $value) });
-        my $res = await $p;
-        unless $res.result-code eq success {
-            return $res;
-        }
+        my $resp = self!wrap-request({ $op.message });
+        Promise(supply {
+            whenever $resp {
+                if .result-code == success {
+                    emit $op.callback($_);
+                } else {
+                    die X::Cro::LDAP::Client::UnsuccessfulExtended.new(response => $_);
+                }
+            }
+        })
+    }
 
-        #self!wrap-request({  })
+    multi method extend(Str $request-name, Buf $request-value?) {
+        die X::Cro::LDAP::Client::NotConnected.new(:op<extended>) unless self;
+
+        self!wrap-request({ ExtendedRequest.new(:$request-name, :$request-name) });
     }
 
     method startTLS() {
+        die "Not Yet Implemented";
         self.extend("1.3.6.1.4.1.1466.20037");
     }
 
