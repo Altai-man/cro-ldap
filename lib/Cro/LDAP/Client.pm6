@@ -165,8 +165,7 @@ class Cro::LDAP::Client {
                 is-secure => $url.is-secure, :$ca-file);
     }
 
-    method disconnect(Bool :$unbind = True) {
-        self.unbind if $unbind;
+    method disconnect {
         with $!pipeline {
             $!pipeline.close;
             $!pipeline = Nil;
@@ -190,7 +189,8 @@ class Cro::LDAP::Client {
         die X::Cro::LDAP::Client::NotConnected.new(:op<unbind>) unless self;
 
         self!wrap-request({ UnbindRequest.new });
-        self.disconnect(:!unbind);
+        $!pipeline.close;
+        $!pipeline = Nil;
     }
 
     method add($dn, :@attrs, :@controls) {
