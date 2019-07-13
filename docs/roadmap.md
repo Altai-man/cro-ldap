@@ -8,8 +8,8 @@
 
 ##### Authentication
 
-- [ ] Ensure anonymous authentication ([RFC 4513](https://tools.ietf.org/pdf/rfc4513.pdf), 5.1.1)
-- [ ] Ensure simple name/password ([RFC 4513](https://tools.ietf.org/pdf/rfc4513.pdf), 5.1.3)
+- [x] Ensure anonymous authentication ([RFC 4513](https://tools.ietf.org/pdf/rfc4513.pdf), 5.1.1)
+- [x] Ensure simple name/password ([RFC 4513](https://tools.ietf.org/pdf/rfc4513.pdf), 5.1.3)
 - [ ] * StartTLS operation ([RFC 4513](https://tools.ietf.org/pdf/rfc4513.pdf), 3)
 - [ ] * SASL EXTERNAL ([RFC 4513](https://tools.ietf.org/pdf/rfc4513.pdf), 5.2.3)
 
@@ -19,7 +19,7 @@
   - [ ] SEQUENCE tag is not recognized
   - [ ] messageID cannot be parsed
   - [ ] Tag of protocolOp is not recognized as a request
-- [ ] messageID of a request MUST have a non-zero value, must be different from other values
+- [x] messageID of a request MUST have a non-zero value, must be different from other values
 
 ##### Types
 
@@ -39,7 +39,7 @@
 - [x] Search
 - [x] Unbind
 - [x] Abandon
-- [ ] Extended
+- [x] Extended
 - [ ] StartTLS
 
 ##### Misc
