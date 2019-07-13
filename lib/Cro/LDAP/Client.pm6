@@ -29,13 +29,13 @@ class X::Cro::LDAP::Client::NotConnected is Exception {
     method message() { "Cannot call $!op without an active connection" }
 }
 
-class X::Cro::LDAP::Client::UnrecognizedFilter {
+class X::Cro::LDAP::Client::UnrecognizedFilter is Exception {
     has Str $.str;
 
     method message() { "Filter pattern $!str was not recognized" }
 }
 
-class X::Cro::LDAP::Client::UnsuccessfulExtended {
+class X::Cro::LDAP::Client::UnsuccessfulExtended is Exception {
     has ExtendedResponse $.response;
 
     method message() { "Was not able to process extended operation result, check Response object" }
