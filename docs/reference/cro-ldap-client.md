@@ -42,26 +42,11 @@ $client.disconnect;
 
 #### Instantiation and connection
 
-```perl6
-use Cro::LDAP::Client;
-```
-
-The `Cro::LDAP::Client` class is a main class used for communicating
+The `Cro::LDAP::Client` class is the main class used for communicating
 with LDAP server.
 
 It provides methods for sending requests to the LDAP server and can be
 used for both one time requests and multi-request communication.
-
-To create a `Cro::LDAP::Client` instance, normal `new` constructor is
-used:
-
-```perl6
-my $client = Cro::LDAP::Client.new;
-```
-
-If the same object won't be re-used with different remote hosts, `host`
-and `port` parameters can be passed: default values are `localhost` and
-`389` respectively.
 
 ###### connect
 
@@ -70,15 +55,23 @@ multi method connect(Str $ldap-url --> Promise) {}
 multi method connect(Str :$host, Int :$port --> Promise) {}
 ```
 
-To establish a new connection to the server, `connect` method should be
-used. The `connect` method returns a `Promise` that will be either kept
+To create a `Cro::LDAP::Client` instance method `connect` is used:
+
+```perl6
+use Cro::LDAP::Client;
+my $client = Cro::LDAP::Client.connect('ldaps.host', 389);
+# or
+my $client = Cro::LDAP::Client.connect('ldap://localhost/');
+```
+
+To establish a new connection to the server, `connect` method is used.
+It returns a `Promise` object that will be either kept
 with the caller `Cro::LDAP::Client` instance or broken depending on a
 success or a failure during the connection process.
 
-It has number of candiates to call.
-
-The most commonly used takes a LDAP URL (according to
-[RFC 4516](https://tools.ietf.org/pdf/rfc4516.pdf) as an argument:
+This method has two candiates. The most commonly used takes a `Str` object with
+LDAP URL (according to [RFC 4516](https://tools.ietf.org/pdf/rfc4516.pdf)
+as an argument:
 
     $client.connect('ldap://localhost:20000/');
 
@@ -86,7 +79,7 @@ The second one takes two named arguments, `host` and `port`, both are
 optional, which set remote host and port to connect to.
 
 As both are optional, the `connect` method can be called without
-arguments, in this case, instance's `host` and `port` attribute values
+arguments, in this case, default values (`localhost` and `380` respectively)
 will be used. The same rule applies for the passed LDAP URL that does
 not have a port or a host specified.
 
@@ -94,35 +87,26 @@ not have a port or a host specified.
 # Defaults
 
 # connects to `ldap://localhost:389/`
-my $client = Cro::LDAP::Client.new.connect;
+my $client = Cro::LDAP::Client.connect;
 # connects to `ldap://localhost:389/foo/`
-$client = Cro::LDAP::Client.new.connect('ldap:///foo');
+$client = Cro::LDAP::Client.connect('ldap:///foo');
 # connects to `ldap://ldap.host:389/`
-$client = Cro::LDAP::Client.new.connect('ldap://ldap.host/');
+$client = Cro::LDAP::Client.connect('ldap://ldap.host/');
 
 # Instance attributes
 
 # connects to `ldap://remote.org:390/` 
-$client = Cro::LDAP::Client.new(:host<remote.org/>, :port(390)).connect;
+$client = Cro::LDAP::Client.connect(:host<remote.org>, :port(390));
 
 # Explicit URL
 
 # connects to `ldap://remote2.com:250/`
-$client = Cro::LDAP::Client.new.connect('ldap://remote2.com:250');
+$client = Cro::LDAP::Client.connect('ldap://remote2.com:250');
 
 # Explicit URL overrides attributes
 
 # connects to `ldap://remote2.com:250/` too
-$client = Cro::LDAP::Client.new(:host<remote.org/>, :port(390)).connect('ldap://remote2.com:250');
-```
-
-As a shortcut, the `connect` method can be called on `Cro::LDAP::Client`
-type object directly. In this case, the method will create a
-`Cro::LDAP::Client` instance and will use it to do a connection,
-returning the created object:
-
-```perl6
-my $client = Cro::LDAP::Client.connect('ldap://remote.org:389');
+$client = Cro::LDAP::Client.connect(:host<remote.org/>, :port(390));
 ```
 
 ##### Disconnecting
@@ -137,9 +121,9 @@ method disconnect() {}
 exception of type `X::Cro::LDAP::Client::DoubleConnect`. It will not
 implicitly break the connection and re-connect to the specified host.
 
-In most cases you want to call `unbind` method that sends an Unbind
-message to the server and terminates the connection. When it is for some
-reasons not desired, the `disconnect` method can be used to forcibly terminate a session.
+In most cases a graceful connection termination is desired and thus
+`unbind` method should be preferred over `disconnect`. The `disconnect`
+method drops the connection without sending Unbind Request to the server.
 
 ```perl6
 # Correct

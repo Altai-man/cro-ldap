@@ -52,8 +52,6 @@ role Abandonable[$client, $id] {
 }
 
 class Cro::LDAP::Client {
-    has $.host = 'localhost';
-    has $.port = 389;
     has atomicint $!message-counter = 1;
 
     my monitor Pipeline {
@@ -147,17 +145,15 @@ class Cro::LDAP::Client {
 
     # Connection-related methods
 
-    multi method connect(Cro::LDAP::Client:U: Str :$host, Int :$port, :$is-secure = False, :$ca-file --> Promise) {
-
-        self.new.connect(:$host, :$port, :$is-secure, :$ca-file);
-    }
-    multi method connect(Cro::LDAP::Client:D: Str :$host, Int :$port, Bool :$is-secure = False, :$ca-file --> Promise) {
-        with $!pipeline {
-            die X::Cro::LDAP::Client::DoubleConnect.new;
+    multi method connect(Str :$host, Int :$port, Bool :$is-secure = False, :$ca-file --> Promise) {
+        without self {
+            return self.new.connect(:$host, :$port, :$is-secure, :$ca-file);
         }
 
-        my $host-value = $host // $!host;
-        my $port-value = $port // ($is-secure ?? 636 !! $!port);
+        die X::Cro::LDAP::Client::DoubleConnect.new with $!pipeline;
+
+        my $host-value = $host // 'localhost';
+        my $port-value = $port // ($is-secure ?? 636 !! 389);
 
         my %ca := $ca-file ?? { :$ca-file } !! {};
 

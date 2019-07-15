@@ -10,10 +10,6 @@ use Test;
 
 plan *;
 
-is Cro::LDAP::Client.new.host, "localhost", "Default host is localhost";
-
-is Cro::LDAP::Client.new.port, 389, "Default port is 389";
-
 # Connection
 sub prepare-server($host = 'localhost', $port = 3890) {
     my Cro::Service $server = Cro::LDAP::Server.new(
@@ -24,7 +20,7 @@ sub prepare-server($host = 'localhost', $port = 3890) {
 }
 
 {
-    my $conn = Cro::LDAP::Client.new.connect(:host<localhost>, :port(3891));
+    my $conn = Cro::LDAP::Client.connect(:host<localhost>, :port(3891));
     ok $conn ~~ Promise, "connect method returns a Promise";
     todo "Abilities are overestimated", 1;
     dies-ok { await $conn }, "Connection dies";
@@ -36,8 +32,7 @@ sub prepare-server($host = 'localhost', $port = 3890) {
     LEAVE $server.stop;
 
     lives-ok {
-        my $client = Cro::LDAP::Client.new;
-        my $conn = await $client.connect(:host<localhost>, :port(3890));
+        my $conn = await Cro::LDAP::Client.connect(:host<localhost>, :port(3890));
         ok $conn ~~ Cro::LDAP::Client:D, "connect method resolves into caller Cro::LDAP::Client";
     }, "Can connect to a working server";
 }
@@ -46,27 +41,8 @@ sub prepare-server($host = 'localhost', $port = 3890) {
     my $server = prepare-server;
     LEAVE $server.stop;
     lives-ok {
-        await Cro::LDAP::Client.new(:host<localhost>, :port(3890)).connect;
-    }, "Argument-less connect takes data from instance";
-    subtest {
-        lives-ok {
-            ok (await Cro::LDAP::Client.connect(:host<localhost>, :port(3890))) ~~ Cro::LDAP::Client:D;
-        }
-    }, "connect can be called on Cro::LDAP::Client type object";
-}
-
-{
-    my $server = prepare-server;
-    LEAVE $server.stop;
-    lives-ok {
         await Cro::LDAP::Client.connect("ldap://localhost:3890/");
     }, "Can connect using canonical LDAP URL";
-    lives-ok {
-        await Cro::LDAP::Client.new(port => 3890).connect("ldap:///");
-    }, "Can connect using empty canonical ldap url";
-    lives-ok {
-        await Cro::LDAP::Client.new(:host<foo>, :port(15)).connect("ldap://localhost:3890/");
-    }, "connect LDAP URL overrides per-instance values";
 }
 
 {
