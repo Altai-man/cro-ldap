@@ -1,3 +1,4 @@
+use Base64;
 use Text::LDIF;
 
 class X::Cro::LDAP::LDIF::CannotParse is Exception {
@@ -17,11 +18,20 @@ class Cro::LDAP::Entry does Associative {
 
         my @items;
 
-        for $ldif<entries><> {
-            # note $_;
+        for $ldif<entries><> -> $entry {
+            next unless $entry;
+            my $new-entry = self.new;
+
+            my $DN = $entry<dn>;
+            $new-entry.dn = $DN ~~ Str ?? $DN !! decode-base64($DN.value, :bin).decode;
+
+            self.populateAttributes($entry<attrs>.List, $new-entry);
+
+            @items.push: $new-entry;
         }
 
         for $ldif<changes><> -> $change {
+            next unless $change;
             my $entry = self.new;
             $entry.dn = $change<dn>;
 
@@ -31,7 +41,7 @@ class Cro::LDAP::Entry does Associative {
                 # If it is a Pair, we need to populate attributes and unwrap it
                 # so that it could be used in Operation setting code
                 $operation .= key;
-                self.populateAttributes($change, $entry);
+                self.processModifyEntry($change, $entry);
             }
             # Text::LDIF always has a changetype correct when parsed, so no checks here
             $entry.operation = LDIF::Operation(LDIF::Operation.enums{'ldif-' ~ $operation});
@@ -42,7 +52,7 @@ class Cro::LDAP::Entry does Associative {
         @items;
     }
 
-    method populateAttributes($change, $entry) {
+    method processModifyEntry($change, Cro::LDAP::Entry $entry) {
         my @attributes;
 
         if $change<change>.key eq 'modify' {
@@ -53,6 +63,10 @@ class Cro::LDAP::Entry does Associative {
             @attributes = $change<change>.value<>;
         }
 
+        self.populateAttributes(@attributes, $entry);
+    }
+
+    method populateAttributes(@attributes, Cro::LDAP::Entry $entry) {
         for @attributes -> $attr {
             when $attr.value ~~ Pair {
                 # The structure is:
