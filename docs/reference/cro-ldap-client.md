@@ -441,8 +441,10 @@ To add a control to an operation, additional named argument `control` is
 passed. Its value can be an `Cro::LDAP::Control` object or a `Hash`
 instance with up to three pairs included:
 
-* `type` - a `Str` value for control's type
-* `critical` - a `Bool` value for control's criticality (its default
+* `type` - a `Str` value for control's type. Passing a value that does not
+  conform to OID syntax causes an exception of type `X::Cro::LDAP::Client::IncorrectOID`
+  to be thrown.
+* `critical` - a `Bool` value indicating if a control is critical (its default
   value - `False`)
 * `value` - a `Str` value for control's value, absent by default
 
@@ -503,6 +505,10 @@ Manual processing allows user to handle the process directly. It includes:
 
 * Passing the extended operation request name and value (if any) to the `extend` method.
 * Receiving and decoding a response object.
+
+Note that request name that does not conform to LDAP OID rules
+passed will cause an exception of type `X::Cro::LDAP::Client::IncorrectOID`
+to be thrown.
 
 ```perl6
 use ASN::Types;

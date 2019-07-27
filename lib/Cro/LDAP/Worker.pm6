@@ -45,6 +45,9 @@ role Cro::LDAP::Worker {
                     }
                 }
             }
+            when ExtendedRequest {
+                extendedResp => self.extended($_, :@controls);
+            }
             when Int { # AbandonRequest is just Int
                 self.abandon($_, :@controls);
                 Nil;

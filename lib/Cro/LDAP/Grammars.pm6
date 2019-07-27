@@ -21,7 +21,7 @@ grammar Common {
     token keychar { <[-a..zA..Z0..9]> }
 
     token numericoid { <number> [ "." <number> ]+ }
-    token number { <[0..9]> | [ <[1..9]> <[0..9]> ] }
+    token number { <[0..9]> | [ <[1..9]> <[0..9]>+ ] }
 }
 
 grammar Attributes {

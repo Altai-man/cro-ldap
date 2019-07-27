@@ -1,6 +1,7 @@
 use ASN::Types;
 use Cro::LDAP::Entry;
 use Cro::LDAP::Extension;
+use Cro::LDAP::Grammars;
 use Cro::LDAP::Search;
 use Cro::LDAP::Types;
 use Cro::LDAP::MessageSerializer;
@@ -40,6 +41,12 @@ class X::Cro::LDAP::Client::UnsuccessfulExtended is Exception {
     has ExtendedResponse $.response;
 
     method message() { "Was not able to process extended operation result, check Response object" }
+}
+
+class X::Cro::LDAP::Client::IncorrectOID is Exception {
+    has Str $.str;
+
+    method message() { "Incorrect control type syntax: '$!str'" }
 }
 
 role Abandonable {
@@ -330,8 +337,11 @@ class Cro::LDAP::Client {
 
     multi method extend(Str $request-name, Buf $request-value?) {
         die X::Cro::LDAP::Client::NotConnected.new(:op<extended>) unless self;
+        without Common.parse($request-name, :rule<numericoid>) {
+            die X::Cro::LDAP::Client::IncorrectOID.new(:str($request-name));
+        }
 
-        self!wrap-request({ ExtendedRequest.new(:$request-name, :$request-name) });
+        self!wrap-request({ ExtendedRequest.new(:$request-name, :$request-value) });
     }
 
     method startTLS() {
@@ -388,7 +398,8 @@ class Cro::LDAP::Client {
                 @seq.push: $_;
             }
             when Associative {
-                my $control = Control.new(control-type => $_<type>,
+                my $control-type = self!check-control($_);
+                my $control = Control.new(:$control-type,
                         criticality => $_<critical> // False,
                         control-value => $_<value> // Str);
                 @seq.push: $control;
@@ -398,5 +409,12 @@ class Cro::LDAP::Client {
             }
         }
         ASNSequenceOf[Control].new(:@seq);
+    }
+    method !check-control($control) {
+        with $control<type> && (Common.parse($control<type>, :rule<numericoid>)) {
+            return ~$_;
+        } else {
+            die X::Cro::LDAP::Client::IncorrectOID.new(str => ($control<type> // 'no type specified at all'));
+        }
     }
 }

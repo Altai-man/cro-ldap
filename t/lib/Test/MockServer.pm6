@@ -125,4 +125,15 @@ class MockLDAPWorker does Cro::LDAP::Worker {
     }
 
     method abandon($req, :@controls) {}
+
+    method extended($req, :@controls) {
+        if $req.request-name.decode eq '1.3.6.1.4.1.4203.1.11.3' {
+            ExtendedResponse.new(result-code => success,
+                    matched-dn => "dc=local", :error-message(''),
+                    response-name => $req.request-name,
+                    response => 'dc=local');
+        } else {
+            die "Mock server received an unknown extended request";
+        }
+    }
 }

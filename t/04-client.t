@@ -275,12 +275,27 @@ subtest {
     is $control-resp.result-code, compareFalse, 'Got correct result code';
     is $control-resp.matched-dn.decode, 'moc=cd,elpmaxe=cd,elpoep=uo,nesnejb=diu', 'Got correct matched DN';
 
+    throws-like {
+        $client.add("", :attrs(), controls => [{ type => 'error', :critical },]);
+    }, X::Cro::LDAP::Client::IncorrectOID, message => /'error'/, 'Incorrect control type syntax throws';
+    throws-like {
+        $client.add("", :attrs(), controls => [{ :critical },]);
+    }, X::Cro::LDAP::Client::IncorrectOID, message => /'no type'/, 'Empty control type throws';
+
     $control-resp = await $client.add("uid=bjensen,ou=people,dc=example,dc=com", :attrs(["sn" => "Doe"]),
                 controls => [{ type => "1.3.6.1.1.22", :critical },]);
     is $control-resp.result-code, compareFalse, 'Got correct result code';
     is $control-resp.matched-dn.decode, 'moc=cd,elpmaxe=cd,elpoep=uo,nesnejb=diu', 'Got correct matched DN';
 
 }, "Controls";
+
+subtest {
+    is (await $client.extend(Cro::LDAP::Extension::WhoAmI.new)), 'dc=local', 'Formed extend request out of type';
+    is $client.extend("1.3.6.1.4.1.4203.1.11.3").result.response.decode, 'dc=local', 'Manual extended operation';
+    throws-like {
+        $client.extend("error");
+    }, X::Cro::LDAP::Client::IncorrectOID, message => /'error'/, 'Operation OID is checked';
+}, 'Extended operation';
 
 # Sync tests
 
