@@ -182,14 +182,14 @@ subtest {
 
 # MODIFY
 subtest {
-    my $modify-resp = await $client.modify("cn=modify1", add => { :type<name>, :vals<Tester> });
+    my $modify-resp = await $client.modify("cn=modify1", add => name => 'Tester');
     ok $modify-resp ~~ ModifyResponse, "Got ModifyResponse object";
     is $modify-resp.matched-dn.decode, "cn=modify1", "Got correct DN";
     is $modify-resp.error-message.decode, "addnameTester", "Sent correct change";
 
-    my @changes = add => { :type<cn>, :vals(['test']) },
-            replace => { :type<cp>, :vals(['test1', 'test2']) },
-            delete => { :type<ck> };
+    my @changes = add => [:cn['test']],
+            replace => [:cp['test1', 'test2']],
+            delete => ['ck'];
     $modify-resp = await $client.modify("cn=modify15", @changes);
     ok $modify-resp ~~ ModifyResponse, "Got ModifyResponse object";
     is $modify-resp.matched-dn.decode, "cn=modify15", "Got correct DN";
@@ -299,9 +299,68 @@ uid: fiona
 telephonenumber: +1 408 555 1212
 jpegphoto:< file://t/testdata/test.jpg
 END
-    my $entries = Cro::LDAP::Entry.parse($ldif);
-    my @p = await $client.sync($entries);
+    my @entries = Cro::LDAP::Entry.parse($ldif);
+    my @p = await $client.sync(@entries);
     is @p[0].error-message, Blob.new, 'Error message is empty';
+
+    $ldif = q:to/END/;
+version: 1
+# Delete an existing entry
+dn: cn=Robert Jensen, ou=Marketing, dc=airius, dc=com
+changetype: delete
+
+# Modify an entry’s relative distinguished name
+dn: cn=Paul Jensen, ou=Product Development, dc=airius, dc=com
+changetype: modrdn
+newrdn: cn=Paula Jensen
+deleteoldrdn: 1
+
+# Rename an entry and move all of its children to a new location in
+# the directory tree (only implemented by LDAPv3 servers).
+dn: ou=PD Accountants, ou=Product Development, dc=airius, dc=com
+changetype: modrdn
+newrdn: ou=Product Development Accountants
+deleteoldrdn: 0
+newsuperior: ou=Accounting, dc=airius, dc=com
+END
+    @entries = Cro::LDAP::Entry.parse($ldif);
+    @p = await $client.sync(@entries);
+
+    $ldif = q:to/END/;
+version: 1
+# Modify an entry: add an additional value to the postaladdress
+# attribute, completely delete the description attribute, replace
+# the telephonenumber attribute with two values, and delete a specific
+# value from the facsimiletelephonenumber attribute
+dn: cn=Paula Jensen, ou=Product Development, dc=airius, dc=com
+changetype: modify
+add: postaladdress
+postaladdress: 123 Anystreet $ Sunnyvale, CA $ 94086
+-
+delete: description
+-
+replace: telephonenumber
+telephonenumber: +1 408 555 1234
+telephonenumber: +1 408 555 5678
+-
+delete: facsimiletelephonenumber
+facsimiletelephonenumber: +1 408 555 9876
+-
+
+# Modify an entry: replace the postaladdress attribute with an empty
+# set of values (which will cause the attribute to be removed), and
+# delete the entire description attribute. Note that the first will
+# always succeed, while the second will only succeed if at least
+# one value for the description attribute is present.
+dn: cn=Ingrid Jensen, ou=Product Support, dc=airius, dc=com
+changetype: modify
+replace: postaladdress
+-
+delete: description
+-
+END
+    @entries = Cro::LDAP::Entry.parse($ldif);
+    @p = await $client.sync(@entries);
 }, 'Sync method';
 
 done-testing;

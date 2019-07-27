@@ -237,11 +237,17 @@ class Cro::LDAP::Client {
 
         my ModificationBottom @modification;
         for @changes -> $change {
-            my $modification = AttributeTypeAndValues.new(type => $change.value<type>, vals => ASNSetOf[ASN::Types::OctetString].new(|($change.value<vals> // ())));
-            @modification.push: ModificationBottom.new(operation => %MODS{$change.key}, :$modification);
+            my $operation = %MODS{$change.key};
+            for @($change.value) -> $attr {
+                my ($type, $vals) = $attr ~~ Str ?? ($attr, ()) !! ($attr.key, $attr.value);
+                my $modification = AttributeTypeAndValues.new(
+                        :$type, :vals(ASNSetOf[ASN::Types::OctetString].new(|$vals)));
+                @modification.push: ModificationBottom.new(:$operation, :$modification);
+            }
         }
+        my $modification = ASNSequenceOf[ModificationBottom].new(seq => @modification);
         self!wrap-request({
-            my $modification = ASNSequenceOf[ModificationBottom].new(seq => @modification);
+
             ModifyRequest.new(:$object, :$modification)
         }, :@controls);
     }
@@ -347,13 +353,16 @@ class Cro::LDAP::Client {
                 self.add($entry.dn, attrs => $entry.attributes.List);
             }
             when LDIF::Op::ldif-delete {
-
+                self.delete($entry.dn);
             }
             when LDIF::Op::ldif-moddn|LDIF::Op::ldif-modrdn {
-
+                self.modifyDN(
+                        :dn($entry.dn), :new-dn($entry<newrdn>),
+                        :delete($entry<delete-on-rdn>),
+                        :new-superior($entry<newsuperior>));
             }
             when LDIF::Op::ldif-modify {
-
+                self.modify($entry.dn, |$entry.attributes);
             }
         }
     }

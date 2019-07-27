@@ -82,7 +82,7 @@ class MockLDAPWorker does Cro::LDAP::Worker {
     }
 
     method modifyDN($req, :@controls) {
-        my $error-message = $req.newrdn ~ $req.new-superior;
+        my $error-message = $req.newrdn ~ ($req.new-superior // Blob.new);
         ModifyDNResponse.new(result-code => success, matched-dn => $req.entry, :$error-message);
     }
 
