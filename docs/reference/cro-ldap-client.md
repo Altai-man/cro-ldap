@@ -232,6 +232,8 @@ $client.bind(name => "foo", password => "password");
 The `unbind` method sends an unbind request to the server and gracefully
 ends an underlying connection. It does not return a value.
 
+This method accepts controls (see Controls section below).
+
 ```perl6
 $client.unbind;
 ```

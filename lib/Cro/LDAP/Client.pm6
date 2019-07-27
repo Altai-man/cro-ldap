@@ -196,10 +196,13 @@ class Cro::LDAP::Client {
         }, :@controls);
     }
 
-    method unbind() {
+    method unbind(:@controls) {
         die X::Cro::LDAP::Client::NotConnected.new(:op<unbind>) unless self;
-
-        self!wrap-request({ UnbindRequest.new });
+        # Remove critical status from unbind controls
+        @controls .= map( -> $c {
+            if $c ~~ Associative { $c<critical>:delete; $c } elsif $c ~~ Control { note $c; $c.criticality = False; $c } else { $c }
+        });
+        self!wrap-request({ UnbindRequest.new }, :@controls);
         $!pipeline.close;
         $!pipeline = Nil;
     }

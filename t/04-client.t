@@ -1,6 +1,7 @@
 use lib $*PROGRAM.parent.add("lib");
 use Test::MockServer;
 use Cro::LDAP::Client;
+use Cro::LDAP::Control;
 use Cro::LDAP::Entry;
 use Cro::LDAP::Reference;
 use Cro::LDAP::Schema;
@@ -61,6 +62,16 @@ sub prepare-server($host = 'localhost', $port = 3890) {
         $client.unbind;
         $client.connect(port => 3890);
     }, "Can connect after disconnection";
+    lives-ok {
+        my $client = await Cro::LDAP::Client.connect("ldap://localhost:3890/");
+        $client.unbind(controls => [{ type => "1.3.6.1.1.22", :critical },]);
+        $client.connect(port => 3890);
+    }, 'Unbind can take manual control';
+    lives-ok {
+        my $client = await Cro::LDAP::Client.connect("ldap://localhost:3890/");
+        $client.unbind(controls => [Cro::LDAP::Control::DontUseCopy.new]);
+        $client.connect(port => 3890);
+    }, 'Unbind can take automatic control';
 }
 
 # Operations
@@ -267,8 +278,6 @@ subtest {
 }, "Schema";
 
 subtest {
-    use Cro::LDAP::Control;
-
     my $control = Cro::LDAP::Control::DontUseCopy.new;
     my $control-resp = await $client.add("uid=bjensen,ou=people,dc=example,dc=com", :attrs(["sn" => "Doe"]),
                 controls => [$control]);
