@@ -319,6 +319,8 @@ $client.modify("cn=modify", @changes);
 
 The `add` method takes a `Str` argument and an optional `Positional` of
 pairs that represent attributes to be set for the created entry.
+If no attributes are passed, an exception of type
+`X::Cro::LDAP::Client::EmptyAttributeList` is thrown.
 
 This method accepts controls (see Controls section below).
 

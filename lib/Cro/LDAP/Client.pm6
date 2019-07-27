@@ -49,6 +49,12 @@ class X::Cro::LDAP::Client::IncorrectOID is Exception {
     method message() { "Incorrect control type syntax: '$!str'" }
 }
 
+class X::Cro::LDAP::Client::EmptyAttributeList is Exception {
+    has Str $.dn;
+
+    method message() { "Attempted to add an entry with no attributes: DN is $!dn" }
+}
+
 role Abandonable {
     method abandon { die X::Cro::LDAP::Client::CannotAbandon.new(:op<BIND>) }
 }
@@ -229,6 +235,7 @@ class Cro::LDAP::Client {
 
     method add($dn, :@attrs, :@controls) {
         die X::Cro::LDAP::Client::NotConnected.new(:op<add>) unless self;
+        die X::Cro::LDAP::Client::EmptyAttributeList.new(:$dn) if @attrs.elems < 1;
         self!queue-after-bind;
 
         self!wrap-request({

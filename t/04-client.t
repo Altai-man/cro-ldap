@@ -215,6 +215,9 @@ subtest {
 
 # ADD
 subtest {
+    throws-like {
+        $client.add("dc=com", attrs => ())
+    }, X::Cro::LDAP::Client::EmptyAttributeList, 'Adding an entry without attributes throws an exception';
     my $resp = await $client.add("uid=jsmith,ou=people,dc=example,dc=com",
             attrs => ["objectclass" => "inetOrgPerson", "objectclass" => "person"]);
     ok $resp ~~ AddResponse, 'Got AddResponse object';
@@ -250,7 +253,7 @@ subtest {
 
 # ABANDON
 subtest {
-    my $add-request = $client.add("dc=add", attrs => []);
+    my $add-request = $client.add("dc=add", attrs => [foo => '42']);
     lives-ok { $add-request.abandon }, "Abandon method is callable on promise";
     await Promise.anyof(Promise.in(5), $abandon-promise-p);
     is $abandon-promise-p.status, Kept, "Abandon request was sent for a promise";
@@ -286,10 +289,10 @@ subtest {
     is $control-resp.matched-dn.decode, 'moc=cd,elpmaxe=cd,elpoep=uo,nesnejb=diu', 'Got correct matched DN';
 
     throws-like {
-        $client.add("", :attrs(), controls => [{ type => 'error', :critical },]);
+        $client.add("", :attrs[:foo<bar>], controls => [{ type => 'error', :critical },]);
     }, X::Cro::LDAP::Client::IncorrectOID, message => /'error'/, 'Incorrect control type syntax throws';
     throws-like {
-        $client.add("", :attrs(), controls => [{ :critical },]);
+        $client.add("", :attrs[:foo<bar>], controls => [{ :critical },]);
     }, X::Cro::LDAP::Client::IncorrectOID, message => /'no type'/, 'Empty control type throws';
 
     $control-resp = await $client.add("uid=bjensen,ou=people,dc=example,dc=com", :attrs(["sn" => "Doe"]),
