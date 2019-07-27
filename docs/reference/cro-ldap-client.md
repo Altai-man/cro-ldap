@@ -184,10 +184,10 @@ Not yet implemented.
 
 All operations must be called on a client instance that was successfully
 connected to the server, otherwise the `X::Cro::LDAP::NotConnected`
-exception will be thrown. Every operation except `unbind` returns 
+exception will be thrown. Every operation except `bind` and `unbind` returns
 a promise that will be kept with either a response object, a supply of
 response objects, or is broken with an exception. The `unbind` operation
-has no return value.
+has no return value and `bind` operation returns a `BindResponse` object.
 
 For most of the operations, Abandon Operation can be performed, for
 details see the `abandon` method description below.
@@ -195,7 +195,7 @@ details see the `abandon` method description below.
 #### bind
 
 ```perl6
-method bind(Str :$name, :$password --> Promise) {}
+method bind(Str :$name, :$password --> BindResponse) {}
 ```
 
 THe `bind` method sends the authentication data to the server. As for
@@ -205,11 +205,17 @@ now, only simple authentication mechanisms are supported:
 - Unauthenticated authentication
 - Name/Password authentication
 
-To use an anonymous authentication, no arguments are required. To use
+To use an anonymous authentication, no arguments are passed. To use
 either unauthenticated authentication or name/password authentication,
-`name` and `password` fields can be passed.
+`name` and `password` arguments can be passed.
 
-It returns a promise that resolves into a value of `BindResponse` type.
+According to LDAP rules, no other requests can be send when a
+bind operation is in progress, so this method is synchronous.
+While other methods can be called concurrently,
+an attempt to do so with bind method will result in
+blocking await.
+
+It returns an object of `BindResponse` type.
 It has all usual components of LDAP Result: `result-code`, `matched-DN`,
 `error-message` attributes and an additional attribute
 `server-sasl-creds`.

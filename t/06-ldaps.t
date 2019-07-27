@@ -22,7 +22,7 @@ my $ca-file = 't/fake-keys/ca-crt.pem';
 
 my $client = await Cro::LDAP::Client.connect("ldaps://localhost:3894", :$ca-file);
 
-given await $client.bind(name => "dc=org,dc=com", password => "mysecret") -> $resp {
+given $client.bind(name => "dc=org,dc=com", password => "mysecret") -> $resp {
     is $resp.result-code, success, "Got correct bind code";
 }
 

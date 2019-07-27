@@ -120,23 +120,23 @@ my Cro::LDAP::Client $client = await Cro::LDAP::Client.connect('ldap://localhost
 subtest {
     my $resp;
 
-    $resp = await $client.bind;
+    $resp = $client.bind;
     ok $resp ~~ BindResponse, 'Got Response::Bind object';
     is $resp.result-code, success, "Returned correct result code";
     is $resp.error-message.decode, "Anonymous bind", "Recognized as anonymous bind";
 
-    $resp = await $client.bind(name => "cn=manager,o=it,c=eu");
+    $resp = $client.bind(name => "cn=manager,o=it,c=eu");
     ok $resp ~~ BindResponse, 'Got Response::Bind object';
     is $resp.result-code, success, "Returned correct result code";
     is $resp.error-message.decode, "Unauthenticated bind", "Recognized as unauthenticated bind";
 
-    $resp = await $client.bind(name => "cn=manager,o=it,c=eu", password => "secret");
+    $resp = $client.bind(name => "cn=manager,o=it,c=eu", password => "secret");
     ok $resp ~~ BindResponse, 'Got Response::Bind object';
     is $resp.result-code, success, "Returned correct result code";
     is $resp.error-message.decode, "Normal bind", "Recognized as name/password bind";
     is $resp.server-sasl-creds.decode, "CustomCreds", "SASL server creds were received";
 
-    $resp = await $client.bind(name => "dn=no-more");
+    $resp = $client.bind(name => "dn=no-more");
     ok $resp ~~ BindResponse, 'Got Response::Bind object';
     is $resp.result-code, busy, "Returned correct result code";
 }, "Bind request-response";
@@ -254,10 +254,6 @@ subtest {
     lives-ok { $single-resp.abandon }, "Abandon method is callable on supply";
     await Promise.anyof(Promise.in(5), $abandon-supply-p);
     is $abandon-supply-p.status, Kept, "Abandon request was sent for search supply";
-
-    my $bind-request = $client.bind;
-    throws-like { $bind-request.abandon },
-        X::Cro::LDAP::Client::CannotAbandon, message => /'BIND'/;
 }, "Abandon operation";
 
 # ROOT DSE

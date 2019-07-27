@@ -61,12 +61,13 @@ role Abandonable[$client, $id] {
 
 class Cro::LDAP::Client {
     has atomicint $!message-counter = 1;
+    has $!BIND-P;
+    has Lock $!BIND-LOCK = Lock.new;
 
     my monitor Pipeline {
         has Supplier $!in;
         has Tap $!tap;
         has %!RESPONSE-TABLE;
-        has $!lock = Lock.new;
         has Cro::LDAP::Client $!client;
 
         submethod BUILD(Supplier :$!in, Supply :$out!, Cro::LDAP::Client :$!client) {
@@ -88,6 +89,7 @@ class Cro::LDAP::Client {
         }
 
         method send-request(Cro::LDAP::Message $request) {
+
             $!in.emit($request);
             given $request.protocol-op.key -> $type {
                 # Do nothing as unbind request does not have a response
@@ -184,23 +186,42 @@ class Cro::LDAP::Client {
     }
 
     # Operations
-
-    method bind(Str :$name = "", :$password = "", :@controls) {
+    method bind(Str :$name = "", :$password = "", :@controls --> BindResponse) {
         die X::Cro::LDAP::Client::NotConnected.new(:op<bind>) unless self;
 
-        self!wrap-request({
-            my $authentication = AuthenticationChoice.new($password ~~ Str ??
-                    simple => $password !!
-                    sasl => SaslCredentials.new(|$password));
-            BindRequest.new(version => 3, :$name, :$authentication);
-        }, :@controls);
+        my $new-bind-p = Promise.new;
+        my $bind-promise = cas($!BIND-P, Any, $new-bind-p);
+        if ($bind-promise === Any) {
+            my $resp = await self!wrap-request({
+                my $authentication = AuthenticationChoice.new($password ~~ Str ??
+                        simple => $password !!
+                        sasl => SaslCredentials.new(|$password));
+                BindRequest.new(version => 3, :$name, :$authentication);
+            }, :@controls);
+            $!BIND-LOCK.protect({
+                $new-bind-p.keep;
+                cas($!BIND-P, $new-bind-p, Any);
+            });
+            $resp;
+        } else {
+            await $bind-promise;
+            self.bind(:$name, :$password, :@controls);
+        }
+    }
+
+    method !queue-after-bind() {
+        with $!BIND-P {
+            await $_;
+        }
     }
 
     method unbind(:@controls) {
         die X::Cro::LDAP::Client::NotConnected.new(:op<unbind>) unless self;
+        self!queue-after-bind;
+
         # Remove critical status from unbind controls
         @controls .= map( -> $c {
-            if $c ~~ Associative { $c<critical>:delete; $c } elsif $c ~~ Control { note $c; $c.criticality = False; $c } else { $c }
+            if $c ~~ Associative { $c<critical>:delete; $c } elsif $c ~~ Control { $c.criticality = False; $c } else { $c }
         });
         self!wrap-request({ UnbindRequest.new }, :@controls);
         $!pipeline.close;
@@ -209,6 +230,7 @@ class Cro::LDAP::Client {
 
     method add($dn, :@attrs, :@controls) {
         die X::Cro::LDAP::Client::NotConnected.new(:op<add>) unless self;
+        self!queue-after-bind;
 
         self!wrap-request({
             my @attributes;
@@ -224,12 +246,14 @@ class Cro::LDAP::Client {
 
     method delete($dn, :@controls) {
         die X::Cro::LDAP::Client::NotConnected.new(:op<delete>) unless self;
+        self!queue-after-bind;
 
         self!wrap-request({ DelRequest.new($dn) }, :@controls);
     }
 
     method compare(Str $entry, Str $attribute-desc, Str $assertion-value, :@controls) {
         die X::Cro::LDAP::Client::NotConnected.new(:op<compare>) unless self;
+        self!queue-after-bind;
 
         self!wrap-request({
             my $ava = AttributeValueAssertion.new(:$attribute-desc, :$assertion-value);
@@ -244,6 +268,7 @@ class Cro::LDAP::Client {
     }
     multi method modify($object, @changes, :@controls) {
         die X::Cro::LDAP::Client::NotConnected.new(:op<modify>) unless self;
+        self!queue-after-bind;
 
         my ModificationBottom @modification;
         for @changes -> $change {
@@ -264,6 +289,7 @@ class Cro::LDAP::Client {
 
     method modifyDN(:$dn!, :$new-dn!, :$delete = True, :$new-superior, :@controls) {
         die X::Cro::LDAP::Client::NotConnected.new(:op('modify DN')) unless self;
+        self!queue-after-bind;
 
         self!wrap-request({
             ModifyDNRequest.new(
@@ -281,6 +307,7 @@ class Cro::LDAP::Client {
             Bool :$types-only = False,
             :$attributes = ASNSequenceOf[Any].new(seq => []), :@controls) {
         die X::Cro::LDAP::Client::NotConnected.new(:op<search>) unless self;
+        self!queue-after-bind;
 
         $filter = '(' ~ $filter unless $filter.starts-with('(');
         $filter = $filter ~ ')' unless $filter.ends-with(')');
@@ -298,6 +325,7 @@ class Cro::LDAP::Client {
     }
 
     method abandon($id, :@controls) {
+        self!queue-after-bind;
         self!wrap-request({ AbandonRequest.new($id) }, :@controls);
     }
 
@@ -325,6 +353,7 @@ class Cro::LDAP::Client {
 
     multi method extend(Cro::LDAP::Extension $op) {
         die X::Cro::LDAP::Client::NotConnected.new(:op<extended>) unless self;
+        self!queue-after-bind;
 
         my $resp = self!wrap-request({ $op.message });
         Promise(supply {
@@ -340,6 +369,8 @@ class Cro::LDAP::Client {
 
     multi method extend(Str $request-name, Buf $request-value?) {
         die X::Cro::LDAP::Client::NotConnected.new(:op<extended>) unless self;
+        self!queue-after-bind;
+
         without Common.parse($request-name, :rule<numericoid>) {
             die X::Cro::LDAP::Client::IncorrectOID.new(:str($request-name));
         }
@@ -381,8 +412,8 @@ class Cro::LDAP::Client {
     }
 
     method !wrap-request(&make-message, :@controls) {
-         my $message = make-message;
-         $!pipeline.send-request(self!wrap-with-envelope($message, :@controls));
+        my $message = make-message;
+        $!pipeline.send-request(self!wrap-with-envelope($message, :@controls));
     }
 
     method !wrap-with-envelope($request, :controls(@raw-controls)) {
