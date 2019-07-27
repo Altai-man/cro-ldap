@@ -285,23 +285,25 @@ describe modification operations to send.
 Every operation pair must be in format:
 
 ```
-$operation => { :$type, :values(['foo', Buf.new(1, 2, 3), ...]) }
+$operation => $type; # when value is not present, e.g. for delete operation
+$operation => $type => 'foo'; # when a single value is present
+$operation => $type => ['foo', Buf.new(1, 2, 3), ...]; # when many values are present
 ```
 
 Here, `$operation` is a key, it must be either `add`, `replace` or
-`delete`, and the value is a hash with `type` and `values` elements. The
-`type` element is a `Str` object with the attribute name. The `values`
-element is optional (considered to be an empty array by default): its
-value must be either a `Str` (which will be converted to bytes in
+`delete`, and the value is either a `Str` object or a `Pair` object that
+describe the attribute to modify. A `Str` or `Pair`s key represent the attribute name
+and possible value represents attribute values: values passed there
+must be either a `Str` (which will be converted to bytes in
 UTF-8), `Buf` (for binary data like images) or an `Array` (can contain
 both `Str` and `Buf` items).
 
 This method accepts controls (see Controls section below).
 
 ```perl6
-my @changes = add => { :type<name>, :vals(['Tester']) },
-    replace => { :type<songs>, :vals(['Chase the Grain', 'Chase the Grain']) },
-    delete => { :type<cover>, :vals(Buf.new($image-buf)) };
+my @changes = add => :cn['test'],
+        replace => [:cp['test1', 'test2'], :cover(Buf.new($image-buf))],
+        delete => ['ck', 'cd'];
 $client.modify("cn=modify", @changes);
 ```
 

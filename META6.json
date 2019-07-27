@@ -14,7 +14,8 @@
     "OO::Monitors",
     "Text::LDIF",
     "IO::Socket::Async::SSL",
-    "Cro::TLS"
+    "Cro::TLS",
+    "Base64"
   ],
   "build-depends": [],
   "test-depends": [],
