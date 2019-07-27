@@ -45,10 +45,16 @@ class MockLDAPWorker does Cro::LDAP::Worker {
             }
         }
 
+        my $error-message = '';
+        without $req.attributes.seq.first(*.type.decode eq 'jpegphoto') {
+            for @($req.attributes.seq) -> $attr {
+                $error-message ~= $attr.type.decode;
+                $error-message ~= $attr.vals.map(*.key.decode).Set;
+            }
+        }
+
         AddResponse.new(
-                result-code => compareTrue,
-                matched-dn => $req.entry,
-                error-message => [~] $req.attributes.seq.map({ "$_.type().decode()$_.vals().map(*.key.decode).Set()" }));
+                result-code => success, matched-dn => $req.entry, :$error-message);
     }
 
     method delete($req, :@controls) {

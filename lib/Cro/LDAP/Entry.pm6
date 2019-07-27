@@ -5,11 +5,11 @@ class X::Cro::LDAP::LDIF::CannotParse is Exception {
     method message() { "Cannot parse LDIF" }
 }
 
-enum LDIF::Operation <ldif-add ldif-delete ldif-modify ldif-moddn ldif-modrdn>;
+enum LDIF::Op is export <ldif-add ldif-delete ldif-modify ldif-moddn ldif-modrdn>;
 
 class Cro::LDAP::Entry does Associative {
     has Str $.dn is rw;
-    has LDIF::Operation $.operation is rw;
+    has LDIF::Op $.operation is rw;
     has %.attributes is rw handles <AT-KEY EXISTS-KEY>;
 
     method parse(Str $ldif-str) {
@@ -44,7 +44,7 @@ class Cro::LDAP::Entry does Associative {
                 self.processModifyEntry($change, $entry);
             }
             # Text::LDIF always has a changetype correct when parsed, so no checks here
-            $entry.operation = LDIF::Operation(LDIF::Operation.enums{'ldif-' ~ $operation});
+            $entry.operation = LDIF::Op(LDIF::Op.enums{'ldif-' ~ $operation});
 
             @items.push: $entry;
         }

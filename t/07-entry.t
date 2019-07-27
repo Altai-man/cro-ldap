@@ -82,7 +82,7 @@ my @entries = Cro::LDAP::Entry.parse($ldif);
 subtest {
     $entry = @entries[0];
     is $entry.dn, "cn=Fiona Jensen, ou=Marketing, dc=airius, dc=com", 'Correct DN';
-    is $entry.operation, LDIF::Operation::ldif-add, 'Correct operation';
+    is $entry.operation, LDIF::Op::ldif-add, 'Correct operation';
     is $entry<cn>, 'Fiona Jensen';
     ok $entry<jpegphoto> ~~ Buf;
     is $entry<jpegphoto>.elems, 1229;
@@ -92,14 +92,14 @@ subtest {
 subtest {
     $entry = @entries[1];
     is $entry.dn, "cn=Robert Jensen, ou=Marketing, dc=airius, dc=com", 'Correct DN';
-    is $entry.operation, LDIF::Operation::ldif-delete, 'Correct operation';
+    is $entry.operation, LDIF::Op::ldif-delete, 'Correct operation';
     is $entry.attributes.elems, 0;
 }, 'Second entry';
 
 subtest {
     $entry = @entries[2];
     is $entry.dn, "cn=Paul Jensen, ou=Product Development, dc=airius, dc=com", 'Correct DN';
-    is $entry.operation, LDIF::Operation::ldif-moddn, 'Correct operation';
+    is $entry.operation, LDIF::Op::ldif-moddn, 'Correct operation';
     ok $entry<delete-on-rdn>;
     is $entry<newrdn>, 'cn=Paula Jensen';
     nok $entry<newsuperior>;
@@ -108,7 +108,7 @@ subtest {
 subtest {
     $entry = @entries[3];
     is $entry.dn, "ou=PD Accountants, ou=Product Development, dc=airius, dc=com", 'Correct DN';
-    is $entry.operation, LDIF::Operation::ldif-moddn, 'Correct operation';
+    is $entry.operation, LDIF::Op::ldif-moddn, 'Correct operation';
     nok $entry<delete-on-rdn>;
     is $entry<newrdn>, 'ou=Product Development Accountants';
     nok $entry<newsuperior>;
@@ -117,7 +117,7 @@ subtest {
 subtest {
     $entry = @entries[4];
     is $entry.dn, "cn=Paula Jensen, ou=Product Development, dc=airius, dc=com", 'Correct DN';
-    is $entry.operation, LDIF::Operation::ldif-modify, 'Correct operation';
+    is $entry.operation, LDIF::Op::ldif-modify, 'Correct operation';
     is $entry<add>, [postaladdress => '123 Anystreet $ Sunnyvale, CA $ 94086'];
     is $entry<delete>, ['description', :facsimiletelephonenumber("+1 408 555 9876")];
     is $entry<replace>, [telephonenumber => ['+1 408 555 1234', '+1 408 555 5678']]
@@ -126,7 +126,7 @@ subtest {
 subtest {
     $entry = @entries[5];
     is $entry.dn, "cn=Ingrid Jensen, ou=Product Support, dc=airius, dc=com", 'Correct DN';
-    is $entry.operation, LDIF::Operation::ldif-modify, 'Correct operation';
+    is $entry.operation, LDIF::Op::ldif-modify, 'Correct operation';
     is $entry<delete>, <description>;
     is $entry<replace>, <postaladdress>;
 }, 'Sixth entry';
@@ -192,7 +192,7 @@ END
 subtest {
     $entry = @entries[0];
     is $entry.dn, "ou=営業部,o=Airius", 'Correct DN';
-    is $entry.operation, LDIF::Operation, 'Correct operation';
+    is $entry.operation, LDIF::Op, 'Correct operation';
     is $entry<objectclass>.elems, 2;
 }, 'First entry';
 

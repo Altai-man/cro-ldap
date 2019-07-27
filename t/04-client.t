@@ -103,7 +103,7 @@ my Cro::Service $server = Cro::LDAP::Server.new(
 $server.start;
 END $server.stop;
 
-my $client = await Cro::LDAP::Client.connect('ldap://localhost:20000/');
+my Cro::LDAP::Client $client = await Cro::LDAP::Client.connect('ldap://localhost:20000/');
 
 # BIND
 subtest {
@@ -202,6 +202,7 @@ subtest {
     my $resp = await $client.add("uid=jsmith,ou=people,dc=example,dc=com",
             attrs => ["objectclass" => "inetOrgPerson", "objectclass" => "person"]);
     ok $resp ~~ AddResponse, 'Got AddResponse object';
+    is $resp.result-code, success, 'Got correct result code';
     is $resp.matched-dn.decode, "uid=jsmith,ou=people,dc=example,dc=com", "Got correct DN";
     is $resp.error-message.decode, 'objectclassinetOrgPersonobjectclassperson', "Sent correct add attributes";
 }, "Add request";
@@ -280,5 +281,27 @@ subtest {
     is $control-resp.matched-dn.decode, 'moc=cd,elpmaxe=cd,elpoep=uo,nesnejb=diu', 'Got correct matched DN';
 
 }, "Controls";
+
+# Sync tests
+
+subtest {
+    my $ldif = q:to/END/;
+version: 1
+# Add a new entry
+dn: cn=Fiona Jensen, ou=Marketing, dc=airius, dc=com
+changetype: add
+objectclass: top
+objectclass: person
+objectclass: organizationalPerson
+cn: Fiona Jensen
+sn: Jensen
+uid: fiona
+telephonenumber: +1 408 555 1212
+jpegphoto:< file://t/testdata/test.jpg
+END
+    my $entries = Cro::LDAP::Entry.parse($ldif);
+    my @p = await $client.sync($entries);
+    is @p[0].error-message, Blob.new, 'Error message is empty';
+}, 'Sync method';
 
 done-testing;

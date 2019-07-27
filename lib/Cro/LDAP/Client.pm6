@@ -1,4 +1,5 @@
 use ASN::Types;
+use Cro::LDAP::Entry;
 use Cro::LDAP::Extension;
 use Cro::LDAP::Search;
 use Cro::LDAP::Types;
@@ -204,9 +205,10 @@ class Cro::LDAP::Client {
             for @@attrs {
                 @attributes.push: AttributeListBottom.new(
                         type => .key,
-                        vals => ASNSetOf[ASN::Types::OctetString].new(.value));
+                        vals => ASNSetOf[ASN::Types::OctetString].new(.value ~~ Buf ?? .value !! |.value));
             }
-            AddRequest.new(entry => $dn, attributes => ASNSequenceOf[AttributeListBottom].new(seq => @attributes));
+            AddRequest.new(entry => $dn,
+                    attributes => ASNSequenceOf[AttributeListBottom].new(seq => @attributes));
         }, :@controls);
     }
 
@@ -329,6 +331,31 @@ class Cro::LDAP::Client {
     method startTLS() {
         die "Not Yet Implemented";
         self.extend("1.3.6.1.4.1.1466.20037");
+    }
+
+    multi method sync(@entries where { $_.all ~~ Cro::LDAP::Entry }) {
+        my @responses;
+        for @entries -> Cro::LDAP::Entry $entry {
+            @responses.push: self.sync($entry);
+        }
+        @responses;
+    }
+
+    multi method sync(Cro::LDAP::Entry $entry) {
+        given $entry.operation {
+            when LDIF::Op::ldif-add {
+                self.add($entry.dn, attrs => $entry.attributes.List);
+            }
+            when LDIF::Op::ldif-delete {
+
+            }
+            when LDIF::Op::ldif-moddn|LDIF::Op::ldif-modrdn {
+
+            }
+            when LDIF::Op::ldif-modify {
+
+            }
+        }
     }
 
     method !wrap-request(&make-message, :@controls) {
