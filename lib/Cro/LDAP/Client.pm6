@@ -89,7 +89,6 @@ class Cro::LDAP::Client {
         }
 
         method send-request(Cro::LDAP::Message $request) {
-
             $!in.emit($request);
             given $request.protocol-op.key -> $type {
                 # Do nothing as unbind request does not have a response
@@ -128,7 +127,7 @@ class Cro::LDAP::Client {
                             :%attributes);
                 }
                 when SearchResultReference {
-                    return Cro::LDAP::Reference.new(refs => |$_.seq);
+                    return Cro::LDAP::Reference.new(refs => |$_.seq.map(*.decode));
                 }
                 default {
                     return $response;

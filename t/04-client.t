@@ -183,6 +183,11 @@ subtest {
             $number-of-responses++;
         }
         whenever $many-resp-with-refs.grep(* ~~ Cro::LDAP::Reference) -> $ref {
+            if $number-of-refs == 0 {
+                is-deeply $ref.refs,
+                        ["ldap://hostb/OU=People,DC=Example,DC=NET??sub", "ldap://hostf/OU=Consultants,OU=People,DC=Example,DC=NET??sub"],
+                        'References are decoded';
+            }
             $number-of-refs++;
         }
     }
