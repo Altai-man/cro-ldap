@@ -138,6 +138,8 @@ class Cro::LDAP::Client {
                     $result = Cro::LDAP::Reference.new(refs => |$response.seq.map(*.decode));
                 }
                 default {
+                    $response.matched-dn = $response.matched-dn.decode;
+                    $response.error-message = $response.error-message.decode;
                     $result = $response;
                 }
             }
@@ -436,6 +438,9 @@ class Cro::LDAP::Client {
             }
             when LDIF::Op::ldif-modify {
                 self.modify($entry.dn, |$entry.attributes);
+            }
+            default {
+                self.add($entry.dn, attrs => $entry.attributes.List)
             }
         }
     }
