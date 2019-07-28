@@ -247,12 +247,12 @@ $client.unbind;
 #### SEARCH
 
 ```perl6
-method search(Str :$dn!, Str :$filter!,
+method search(Str :$dn!, Str :$filter = '(objectclass=*)'',
               Scope :$scope = wholeSubtree,
               DerefAliases :$deref-aliases = derefFindingBaseObj,
               Int :$size-limit = 0, Int :$time-limit = 0,
               Bool :$types-only = False,
-              :$attributes = Array[Str].new()) {}
+              :@attributes = ()) {}
 ```
 
 The `search` method performs a search request and returns a `Supply`
@@ -266,13 +266,18 @@ Other named arguments can be passed to specify parameters for a search
 request, such as size limit, time limit and so on, with defaults
 provided.
 
+The `@.attributes` parameter specifies attributes to request from the server,
+it accepts a List or an Array of `Str` objects. They are checked to follow
+search request attributes syntax and an exception of type
+`X::Cro::LDAP::Client::IncorrectSearchAttribute` is thrown.
+
 This method accepts controls (see Controls section below).
 
 ```perl6
 react {
     whenever $client.search(dn => 'c=foo',
                             filter => '(sn:dn:2.4.6.8.10:=Barney Rubble)') {
-        when Cro::LDAP::Entry { say $_ }
+        when Cro::LDAP::Entry     { say $_ }
         when Cro::LDAP::Reference { say $_ }
 
         LAST { say "No more entries!" }
