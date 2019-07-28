@@ -7,11 +7,12 @@ class MockLDAPWorker does Cro::LDAP::Worker {
 
     method accept(Cro::LDAP::Message $request) {
         my $op = $request.protocol-op.ASN-value;
-        $_[1].keep with @!CHECKS.grep({ $_[0]($op.value) }).first;
+        $_[1].keep with @!CHECKS.first({ $_[0]($op.value) });
         self.Cro::LDAP::Worker::accept($request);
     }
 
-    method bind(BindRequest $req, :@controls --> BindResponse) {
+    method bind(Cro::LDAP::Message $message, :@controls --> BindResponse) {
+        my $req = $message.protocol-op.ASN-value.value;
         my $error-message;
         my $result-code = success;
 
@@ -30,9 +31,10 @@ class MockLDAPWorker does Cro::LDAP::Worker {
         BindResponse.new(:$result-code, :matched-dn(''), :$error-message, :server-sasl-creds<CustomCreds>);
     }
 
-    method unbind($req) {}
+    method unbind(Cro::LDAP::Message $message) {}
 
-    method add($req, :@controls) {
+    method add(Cro::LDAP::Message $message, :@controls) {
+        my $req = $message.protocol-op.ASN-value.value;
         # Special test data can be obtained with controls passed
         with @controls {
             for @controls -> $control {
@@ -53,20 +55,28 @@ class MockLDAPWorker does Cro::LDAP::Worker {
             }
         }
 
-        AddResponse.new(
-                result-code => success, matched-dn => $req.entry, :$error-message);
+
+        my $addResponse = AddResponse.new(result-code => success, matched-dn => $req.entry, :$error-message);
+        my Control $control = Control.new(control-type => "1.3.6.1.1.22", :criticality);
+        Cro::LDAP::Message.new(
+                message-id => $message.message-id,
+                protocol-op => ProtocolOp.new((:$addResponse)),
+                controls => ASNSequenceOf[Control].new(seq => [$control]));
     }
 
-    method delete($req, :@controls) {
+    method delete(Cro::LDAP::Message $message, :@controls) {
+        my $req = $message.protocol-op.ASN-value.value;
         DelResponse.new(result-code => success, matched-dn => $req.value, error-message => "")
     }
 
-    method compare($req, :@controls) {
+    method compare(Cro::LDAP::Message $message, :@controls) {
+        my $req = $message.protocol-op.ASN-value.value;
         my $error-message = "$req.ava().attribute-desc().decode()=$req.ava().assertion-value().decode()";
         CompareResponse.new(result-code => compareTrue, matched-dn => $req.entry, :$error-message)
     }
 
-    method modify($req, :@controls) {
+    method modify(Cro::LDAP::Message $message, :@controls) {
+        my $req = $message.protocol-op.ASN-value.value;
         my $error-message;
         for $req.modification.seq<> {
             given .operation -> $mod {
@@ -81,13 +91,15 @@ class MockLDAPWorker does Cro::LDAP::Worker {
         ModifyResponse.new(result-code => success, matched-dn => $req.object, :$error-message);
     }
 
-    method modifyDN($req, :@controls) {
+    method modifyDN(Cro::LDAP::Message $message, :@controls) {
+        my $req = $message.protocol-op.ASN-value.value;
         $req.new-superior = Blob.new if $req.new-superior !~~ Blob;
         my $error-message = $req.newrdn ~ $req.new-superior;
         ModifyDNResponse.new(result-code => success, matched-dn => $req.entry, :$error-message);
     }
 
-    method search($req, :@controls) {
+    method search(Cro::LDAP::Message $message, :@controls) {
+        my $req = $message.protocol-op.ASN-value.value;
         supply {
             if $req.base-object.elems == 0 {
                 emit (searchResEntry => SearchResultEntry.new(object-name => "",
@@ -127,7 +139,8 @@ class MockLDAPWorker does Cro::LDAP::Worker {
 
     method abandon($req, :@controls) {}
 
-    method extended($req, :@controls) {
+    method extended(Cro::LDAP::Message $message, :@controls) {
+        my $req = $message.protocol-op.ASN-value.value;
         if $req.request-name.decode eq '1.3.6.1.4.1.4203.1.11.3' {
             ExtendedResponse.new(result-code => success,
                     matched-dn => "dc=local", :error-message(''),

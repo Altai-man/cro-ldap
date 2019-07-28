@@ -22,6 +22,7 @@
   "provides": {
     "Cro::LDAP::Client": "lib/Cro/LDAP/Client.pm6",
     "Cro::LDAP::Control": "lib/Cro/LDAP/Control.pm6",
+    "Cro::LDAP::ControlCarry": "lib/Cro/LDAP/ControlCarry.pm6",
     "Cro::LDAP::DN": "lib/Cro/LDAP/DN.pm6",
     "Cro::LDAP::Entry": "lib/Cro/LDAP/Entry.pm6",
     "Cro::LDAP::Extension": "lib/Cro/LDAP/Extension.pm6",

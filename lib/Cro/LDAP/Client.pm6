@@ -1,4 +1,5 @@
 use ASN::Types;
+use Cro::LDAP::ControlCarry;
 use Cro::LDAP::Entry;
 use Cro::LDAP::Extension;
 use Cro::LDAP::Grammars;
@@ -81,13 +82,13 @@ class Cro::LDAP::Client {
                 whenever $out -> $resp {
                     given $resp.protocol-op.key {
                         when 'searchResEntry'|'searchResRef' {
-                            %!RESPONSE-TABLE{$resp.message-id}.emit: self!post-process($resp.protocol-op.value);
+                            %!RESPONSE-TABLE{$resp.message-id}.emit: self!post-process($resp);
                         }
                         when 'searchResDone' {
                             %!RESPONSE-TABLE{$resp.message-id}.done;
                         }
                         default {
-                            %!RESPONSE-TABLE{$resp.message-id}.keep(self!post-process($resp.protocol-op.value));
+                            %!RESPONSE-TABLE{$resp.message-id}.keep(self!post-process($resp));
                         }
                     }
                 }
@@ -115,30 +116,37 @@ class Cro::LDAP::Client {
             }
         }
 
-        method !post-process($response) {
-            CATCH {
-                default {
-                    .note;
-                }
-            }
-            given $response {
-                when SearchResultEntry {
+        method !post-process($message) {
+            my $result;
+            # Translate search results into user-friendly objects
+            given $message.protocol-op.value -> $response {
+                when $response ~~ SearchResultEntry {
                     my %attributes;
                     for $response.attributes.seq<> -> $attr {
                         my $values = $attr.vals.keys;
                         %attributes{$attr.type.decode} = $values.elems == 1 ?? $values[0] !! $values.Array;
                     }
-                    return Cro::LDAP::Entry.new(
-                            dn => $response.object-name.decode,
-                            :%attributes);
+                    $result = Cro::LDAP::Entry.new(dn => $response.object-name.decode, :%attributes);
                 }
-                when SearchResultReference {
-                    return Cro::LDAP::Reference.new(refs => |$_.seq.map(*.decode));
+                when $response ~~ SearchResultReference {
+                    $result = Cro::LDAP::Reference.new(refs => |$response.seq.map(*.decode));
                 }
                 default {
-                    return $response;
+                    $result = $response;
                 }
             }
+            # Attach server-side controls to response
+            with $message.controls<> {
+                my @controls := $_.seq;
+                for @controls -> $control {
+                    $control.control-type = $control.control-type.decode;
+                }
+                $result does Cro::LDAP::ControlCarry[@controls];
+            } else {
+                $result does Cro::LDAP::ControlCarry[()];
+            }
+
+            $result;
         }
 
         method close() {

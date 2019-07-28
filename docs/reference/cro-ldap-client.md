@@ -476,6 +476,15 @@ $client.compare("uid=bjensen,ou=people,dc=example,dc=com", "sn", "Doe",
                 controls => $control);
 ```
 
+Response messages can carry controls too and
+they are exposed for every response message
+as `@.controls` attribute:
+
+```
+my $compare-resp = await $client.compare("uid=bjensen,ou=people,dc=example,dc=com", "sn", "Doe");
+note $compare-resp.controls;
+```
+
 ### Extensions
 
 A support for the LDAP Extended Operation is provided and a set

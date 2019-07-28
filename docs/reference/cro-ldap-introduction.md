@@ -82,7 +82,7 @@ It is intended to be used in pair of `Cro::LDAP::Server` class:
 
 ```perl6
 my Cro::Service $server = Cro::LDAP::Server.new(
-        server => MyTinyLDAPServer.new,
+        worker => MyTinyLDAPServer.new,
         :$host, :$port);
 $server.start;
 # ...

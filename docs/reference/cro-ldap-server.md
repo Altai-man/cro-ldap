@@ -19,7 +19,7 @@ class MyLDAPWorker does Cro::LDAP::Worker {
 }
 
 my Cro::Service $server = Cro::LDAP::Server.new(
-        server => MyLDAPWorker.new,
+        worker => MyLDAPWorker.new,
         :$host, :$port);
 $server.start;
 ```

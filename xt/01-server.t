@@ -35,7 +35,7 @@ sub test-command($command, :@args, :@checks) {
 }
 
 my Cro::Service $server = Cro::LDAP::Server.new(
-        server => MockLDAPWorker.new,
+        worker => MockLDAPWorker.new,
         :host('localhost'),
         :$port);
 

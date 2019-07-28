@@ -17,39 +17,53 @@ role Cro::LDAP::Worker {
         @controls = .seq<> with $request.controls;
         given $op.value {
             when BindRequest {
-                bindResponse => self.bind($_, :@controls);
+                my $resp = self.bind($request, :@controls);
+                return $resp if $resp ~~ Cro::LDAP::Message;
+                bindResponse => $resp;
             }
             when UnbindRequest {
-                self.unbind($_);
+                self.unbind($request);
                 Nil;
             }
             when AddRequest {
-                addResponse => self.add($_, :@controls);
+                my $resp = self.add($request, :@controls);
+                return $resp if $resp ~~ Cro::LDAP::Message;
+                addResponse => $resp;
             }
             when DelRequest {
-                delResponse => self.delete($_, :@controls);
+                my $resp = self.delete($request, :@controls);
+                return $resp if $resp ~~ Cro::LDAP::Message;
+                delResponse => $resp;
             }
             when CompareRequest {
-                compareResponse => self.compare($_, :@controls);
+                my $resp = self.compare($request, :@controls);
+                return $resp if $resp ~~ Cro::LDAP::Message;
+                compareResponse => $resp;
             }
             when ModifyRequest {
-                modifyResponse => self.modify($_, :@controls);
+                my $resp = self.modify($request, :@controls);
+                return $resp if $resp ~~ Cro::LDAP::Message;
+                modifyResponse => $resp;
             }
             when ModifyDNRequest {
-                modDNResponse => self.modifyDN($_, :@controls);
+                my $resp = self.modifyDN($request, :@controls);
+                return $resp if $resp ~~ Cro::LDAP::Message;
+                modDNResponse => $resp;
             }
             when SearchRequest {
                 supply {
-                    whenever self.search($_, :@controls) {
+                    whenever self.search($request, :@controls) {
                         emit $_;
                     }
                 }
             }
             when ExtendedRequest {
-                extendedResp => self.extended($_, :@controls);
+                my $resp = self.extended($request, :@controls);
+                return $resp if $resp ~~ Cro::LDAP::Message;
+                extendedResp => $resp;
             }
             when Int { # AbandonRequest is just Int
-                self.abandon($_, :@controls);
+                self.abandon($request, :@controls);
                 Nil;
             }
             default {

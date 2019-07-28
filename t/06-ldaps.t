@@ -11,7 +11,7 @@ my %tls = private-key-file => 't/fake-keys/server-key.pem',
           certificate-file => 't/fake-keys/server-crt.pem';
 
 my Cro::Service $server = Cro::LDAP::Server.new(
-        server => MockLDAPWorker.new,
+        worker => MockLDAPWorker.new,
         :host('localhost'),
         :3894port, :%tls);
 $server.start;

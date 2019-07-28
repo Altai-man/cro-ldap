@@ -14,7 +14,7 @@ plan *;
 # Connection
 sub prepare-server($host = 'localhost', $port = 3890) {
     my Cro::Service $server = Cro::LDAP::Server.new(
-            server => MockLDAPWorker.new,
+            worker => MockLDAPWorker.new,
             :$host, :$port);
     $server.start;
     $server;
@@ -108,7 +108,7 @@ my @CHECKS = [
 ];
 
 my Cro::Service $server = Cro::LDAP::Server.new(
-        server => MockLDAPWorker.new(:@CHECKS),
+        worker => MockLDAPWorker.new(:@CHECKS),
         :host('localhost'),
         :20000port);
 $server.start;
@@ -299,7 +299,12 @@ subtest {
                 controls => [{ type => "1.3.6.1.1.22", :critical },]);
     is $control-resp.result-code, compareFalse, 'Got correct result code';
     is $control-resp.matched-dn.decode, 'moc=cd,elpmaxe=cd,elpoep=uo,nesnejb=diu', 'Got correct matched DN';
-
+    # Server-side controls
+    my $resp = await $client.add("uid=jsmith,ou=people,dc=example,dc=com",
+            attrs => ["objectclass" => "inetOrgPerson", "objectclass" => "person"]);
+    is $resp.controls.elems, 1, 'Server-side control was added';
+    is $resp.controls[0].control-type, '1.3.6.1.1.22', 'Server-side control type is decoded';
+    ok $resp.controls[0].criticality, 'Server-side control is marked as critical';
 }, "Controls";
 
 subtest {

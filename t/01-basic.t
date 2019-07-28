@@ -8,7 +8,7 @@ use Test;
 plan *;
 
 my Cro::Service $server = Cro::LDAP::Server.new(
-        server => MockLDAPWorker.new,
+        worker => MockLDAPWorker.new,
         :host('localhost'),
         :20005port);
 $server.start;
