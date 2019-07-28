@@ -14,7 +14,7 @@ role Cro::LDAP::Worker {
     method accept(Cro::LDAP::Message $request) {
         my $op = $request.protocol-op.ASN-value;
         my @controls;
-        @controls = .seq<> with $request.controls;
+        @controls = .seq<> with $request.controls<>;
         given $op.value {
             when BindRequest {
                 my $resp = self.bind($request, :@controls);
