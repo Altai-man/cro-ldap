@@ -84,6 +84,8 @@ class Cro::LDAP::Entry does Associative {
                     } else {
                         note "File not found at '$path' for DN '$entry.dn()', skipping...";
                     }
+                } elsif $attr-type eq 'base64' {
+                    $entry{$attr.key} = decode-base64($attr.value.value, :bin);
                 } else {
                     warn "Encountered an attribute of type $attr.perl(), NOT YET IMPLEMENTED";
                 }
