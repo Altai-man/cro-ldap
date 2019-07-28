@@ -1,0 +1,26 @@
+version: 1
+dn: uid=test,ou=people,dc=test,dc=local
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: test
+cn: test
+givenName: Test
+givenName;lang-ja:: 44OG44K544OI
+sn: Tester
+userPassword: {SSHA}Y8UuMTT1qjS/R0zg3JBx9iflsoxMIuZ7
+loginShell: /bin/bash
+uidNumber: 10000
+gidNumber: 10000
+homeDirectory: /home/test
+shadowMax: 60
+shadowMin: 1
+shadowWarning: 7
+shadowInactive: 7
+shadowLastChange: 0
+
+dn: cn=test,ou=groups,dc=test,dc=local
+objectClass: posixGroup
+cn: test
+gidNumber: 0
+memberUid: test
