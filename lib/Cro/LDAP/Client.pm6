@@ -56,6 +56,12 @@ class X::Cro::LDAP::Client::EmptyAttributeList is Exception {
     method message() { "Attempted to add an entry with no attributes: DN is $!dn" }
 }
 
+class X::Cro::LDAP::Client::IncorrectSearchAttribute is Exception {
+    has $.attr;
+
+    method message() { "Requested an attribute with illegal syntax in search request: '$!attr'" }
+}
+
 role Abandonable {
     method abandon { die X::Cro::LDAP::Client::CannotAbandon.new(:op<BIND>) }
 }
@@ -314,22 +320,30 @@ class Cro::LDAP::Client {
         }, :@controls);
     }
 
-    method search(Str :$dn!, Str :$filter! is copy,
+    method search(Str :$dn!, Str :$filter is copy = '(objectclass=*)',
             Scope :$scope = wholeSubtree,
             DerefAliases :$deref-aliases = derefFindingBaseObj,
             Int :$size-limit = 0, Int :$time-limit = 0,
             Bool :$types-only = False,
-            :$attributes = ASNSequenceOf[Any].new(seq => []), :@controls) {
+            :@attributes = [], :@controls) {
         die X::Cro::LDAP::Client::NotConnected.new(:op<search>) unless self;
         self!queue-after-bind;
 
+        # Prepare filter
         $filter = '(' ~ $filter unless $filter.starts-with('(');
         $filter = $filter ~ ')' unless $filter.ends-with(')');
-
         my $filter-object = Cro::LDAP::Search.parse($filter);
-
         die X::Cro::LDAP::Client::UnrecognizedFilter.new(str => $filter) without $filter-object;
 
+        # Prepare attributes
+        for @attributes -> $attribute {
+            unless self!check-attribute-syntax($attribute) {
+                die X::Cro::LDAP::Client::IncorrectSearchAttribute.new(attr => $attribute);
+            }
+        }
+        my $attributes = ASNSequenceOf[Any].new(seq => @attributes);
+
+        # Create request
         self!wrap-request({
             SearchRequest.new(
                     base-object => $dn, :$scope, :$deref-aliases,
@@ -337,31 +351,32 @@ class Cro::LDAP::Client {
                     filter => $filter-object);
         }, :@controls);
     }
+    method !check-attribute-syntax($attribute) {
+        $attribute eq '*'|'1.1' or Attributes.parse($attribute, :rule<attributeDescription>);
+    }
 
     method abandon($id, :@controls) {
         self!queue-after-bind;
         self!wrap-request({ AbandonRequest.new($id) }, :@controls);
     }
 
-    method root-DSE(*@attrs) {
-        my @defs = <altServer namingContexts supportedControl
+    method root-DSE(*@custom-attrs) {
+        my @attributes = <altServer namingContexts supportedControl
                     supportedExtension supportedFeatures supportedLDAPVersion
                     supportedSASLMechanisms subschemaSubentry>;
-        @defs.push: $_ for @attrs;
-        my $attributes = ASNSequenceOf[Any].new(seq => @defs);
+        @attributes.push: $_ for @custom-attrs;
 
-        my $entry = await self.search(:dn(''), :filter<(objectclass=*)>, :$attributes);
+        my $entry = await self.search(:dn(''), :filter<(objectclass=*)>, :@attributes);
         Cro::LDAP::RootDSE.new($entry.attributes);
     }
 
     method schema(Str $dn?) {
         my $base = $dn // self.root-DSE()<subschemaSubentry> // 'cn=schema';
-        my $attributes = ASNSequenceOf[Any].new(seq =>
-                <objectClasses attributeTypes matchingRules matchingRuleUse
+        my @attributes = <objectClasses attributeTypes matchingRules matchingRuleUse
                  dITStructureRules dITContentRules nameForms
-                 ldapSyntaxes extendedAttributeInfo>);
+                 ldapSyntaxes extendedAttributeInfo>;
         my $entry = await self.search(:dn($base), scope => baseObject,
-                                      filter => '(objectClass=subschema)', :$attributes);
+                                      filter => '(objectClass=subschema)', :@attributes);
         Cro::LDAP::Schema.new($entry.attributes);
     }
 

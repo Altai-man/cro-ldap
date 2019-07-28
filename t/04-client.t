@@ -150,6 +150,10 @@ subtest {
 
 # SEARCH
 subtest {
+    throws-like {
+        $client.search(:dn<dc=com>, attributes => ('1.', 'foo'));
+    }, X::Cro::LDAP::Client::IncorrectSearchAttribute, message => /'1.'/, 'Passing an incorrect attribute to search throws';
+
     my $single-resp = $client.search(:dn<o=myhost>, :filter<cn=root>);
     ok $single-resp ~~ Supply, "Search operation returns a Supply";
     react {
