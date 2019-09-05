@@ -170,10 +170,10 @@ If you are using a `connect` call with host and port passed separately,
 you can specify `$is-secure` named `Bool` argument:
 
 ```perl6
-my $client = await Cro::LDAP::Client.connect(host => "a", port => 6260, :is-secure);
+my $client = await Cro::LDAP::Client.connect(host => "a", port => 6360, :is-secure);
 ```
 
-The default port for LDAPS connection is 626, which is automatically
+The default port for LDAPS connection is 636, which is automatically
  used when `:$is-secure` is enabled and no port value specified.
 
 #### StartTLS
