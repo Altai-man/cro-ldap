@@ -5,7 +5,7 @@ use Cro::LDAP::Types;
 use Cro::LDAP::Server;
 use Cro::LDAP::Client;
 
-plan 2;
+plan 3;
 
 my %tls = private-key-file => 't/fake-keys/server-key.pem',
           certificate-file => 't/fake-keys/server-crt.pem';
@@ -19,6 +19,10 @@ $server.start;
 END $server.stop;
 
 my $ca-file = 't/fake-keys/ca-crt.pem';
+
+throws-like {
+    await Cro::LDAP::Client.connect("ldaps://localhost:3894");
+}, X::Cro::LDAP::Client::NoCAFileForSecureConnection, "Attempt to use ldaps without CA file throws an exception";
 
 my $client = await Cro::LDAP::Client.connect("ldaps://localhost:3894", :$ca-file);
 

@@ -62,6 +62,12 @@ class X::Cro::LDAP::Client::IncorrectSearchAttribute is Exception {
     method message() { "Requested an attribute with illegal syntax in search request: '$!attr'" }
 }
 
+class X::Cro::LDAP::Client::NoCAFileForSecureConnection is Exception {
+    has $.host;
+
+    method message() { "Requested to connect to $!host over LDAPS, but CA file path was not passed" }
+}
+
 role Abandonable {
     method abandon { die X::Cro::LDAP::Client::CannotAbandon.new(:op<BIND>) }
 }
@@ -181,6 +187,9 @@ class Cro::LDAP::Client {
             return self.new.connect(:$host, :$port, :$is-secure, :$ca-file);
         }
 
+        if $is-secure {
+            die X::Cro::LDAP::Client::NoCAFileForSecureConnection.new(:$host) without $ca-file;
+        }
         die X::Cro::LDAP::Client::DoubleConnect.new with $!pipeline;
 
         my $host-value = $host // 'localhost';
