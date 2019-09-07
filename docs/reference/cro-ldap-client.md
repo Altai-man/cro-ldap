@@ -7,7 +7,7 @@ use Cro::LDAP::Client;
 
 my $client = Cro::LDAP::Client.connect('ldap://ldap.example.com/');
 
-await $client.bind; # anonymous bind
+$client.bind; # anonymous bind
 
 react {
     whenever $client.search(base => "c=US", filter => '(&(sn=Barr)(o=Texas Instruments))') {
@@ -20,11 +20,11 @@ react {
     }
 }
 
-await $client.unbind;
+$client.unbind;
 
 $client = Cro::LDAP::Client.connect('ldap://ldap.example.org/');
 
-await $client.bind('cn=root, o=Foos of Bar', password => 'secret');
+$client.bind('cn=root, o=Foos of Bar', password => 'secret');
 
 given await $client.add('cn=One Person, o=Earth, c=US',
                         attrs => ["objectclass" => ["inetOrgPerson","person"],
@@ -35,7 +35,7 @@ given await $client.add('cn=One Person, o=Earth, c=US',
     }
 }
 
-await $client.unbind;
+$client.unbind;
 
 $client.disconnect;
 ```

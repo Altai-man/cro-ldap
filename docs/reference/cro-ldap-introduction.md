@@ -14,19 +14,20 @@ goals:
 * Provide a LDAP client (a Directory Service Agent, DSA) with interface
   similar to `Net::LDAP` module from Perl 5's `perl-ldap` distribution.
   However, it is not intended as a drop-in replacement, as:
-  * The `perl-ldap` distrubution provides a wide range of features and
+  * The `perl-ldap` distribution provides a wide range of features and
     functions for manipulating LDAP data, while `Cro::LDAP` aims to be a
     slim, streamlined provider for communication with a LDAP server with
     little data transformations.
   * While API is similar to one in `Net::LDAP`, we aim to make
     `Cro::LDAP` to use Perl 6 to its fullest and avoid blind copying
-    of the API where possible. Thus, a lot of things differ.
+    of the API where possible. Thus, things differ.
 * Provide a skeleton for writing a LDAP server in Perl 6. As Cro focuses
-  on _serving the data_, not _processing it_. However, if one desires to
+  on _serving the data_, not _processing it_, we do not intend to implement
+  a Directory Service provider in Perl 6. However, if one desires to
   write a server part with some specific purpose in mind, tying the
   backend is up to the implementor - and `Cro::LDAP` will serve the
   data.
-* We provide support for third version of LDAP, using
+* We provide support for the third version of LDAP specification, using
   [RFC 4510](https://tools.ietf.org/pdf/rfc4510.pdf) as a source.
   Support for second version of the protocol is not planned, but
   eventually possible.
@@ -48,9 +49,9 @@ responses to be processed by the end-user code.
 
 ```perl6
 my $client = Cro::LDAP::Client.connect('ldap://localhost:20000/');
-# "Foo" name, simple unauthenticated authentication used
-my $bind = await $client.bind(name => "Foo");
-die $bind.error-message if $bind.result-code;
+# "Foo" name, simple unauthenticated authentication is used
+my $bind = $client.bind(name => "Foo");
+die $bind.error-message unless $bind.result-code ~~ success;
 
 react {
     whenever $client.search(base => "c=US", filter => '(&(sn=Barr)(o=Texas Instruments))') -> $entry {
