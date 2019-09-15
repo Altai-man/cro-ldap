@@ -30,10 +30,17 @@ given $client.bind(name => "dc=org,dc=com", password => "mysecret") -> $resp {
     is $resp.result-code, success, "Got correct bind code";
 }
 
+my $p = Promise.new;
+
 react {
-    whenever $client.search(dn => "dc=org,dc=com", filter => "cn=hackers") -> $res {
-        is $res.dn, "foo", "Correct dummy DN";
+    whenever $client.search(dn => "dc=org,dc=com", filter => "cn=hackers") {
+        when Cro::LDAP::Entry {
+            $p.keep if $_.dn eq "foo";
+        }
     }
 }
+
+await Promise.anyof($p, Promise.in(5));
+pass "Correct dummy DN" if $p.status ~~ Kept;
 
 $client.disconnect;

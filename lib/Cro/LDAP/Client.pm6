@@ -1,4 +1,5 @@
 use ASN::Types;
+use Cro::LDAP::Control;
 use Cro::LDAP::ControlCarry;
 use Cro::LDAP::Entry;
 use Cro::LDAP::Extension;
@@ -97,6 +98,7 @@ class Cro::LDAP::Client {
                             %!RESPONSE-TABLE{$resp.message-id}.emit: self!post-process($resp);
                         }
                         when 'searchResDone' {
+                            %!RESPONSE-TABLE{$resp.message-id}.emit: self!post-process($resp);
                             %!RESPONSE-TABLE{$resp.message-id}.done;
                         }
                         default {
@@ -143,6 +145,9 @@ class Cro::LDAP::Client {
                 when $response ~~ SearchResultReference {
                     $result = Cro::LDAP::Reference.new(refs => |$response.seq.map(*.decode));
                 }
+                when $response ~~ SearchResultDone {
+                    $result = Cro::LDAP::Search::Done.new;
+                }
                 default {
                     $response.matched-dn = $response.matched-dn.decode;
                     $response.error-message = $response.error-message.decode;
@@ -150,16 +155,21 @@ class Cro::LDAP::Client {
                 }
             }
             # Attach server-side controls to response
-            with $message.controls<> {
-                my @controls := $_.seq;
-                for @controls -> $control {
-                    $control.control-type = $control.control-type.decode;
+            with $message.controls -> $controls {
+                my @controls = $controls.seq<>;
+                for @controls -> $control is rw {
+                    my $ct = $control.control-type.decode;
+                    my $type = %KNOWN-CONTROLS{$ct};
+                    if $type ~~ Cro::LDAP::Control {
+                        $control = $type.new($control);
+                    } else {
+                        $control = { control-type => $ct, control-value => $control.control-value, criticality => $control.criticality };
+                    }
                 }
                 $result does Cro::LDAP::ControlCarry[@controls];
             } else {
                 $result does Cro::LDAP::ControlCarry[()];
             }
-
             $result;
         }
 
@@ -216,7 +226,7 @@ class Cro::LDAP::Client {
     }
 
     # Operations
-    method bind(Str :$name = "", :$password = "", :@controls --> BindResponse) {
+    method bind(Str :$name = "", :$password = "", :control(:$controls) --> BindResponse) {
         die X::Cro::LDAP::Client::NotConnected.new(:op<bind>) unless self;
 
         my $new-bind-p = Promise.new;
@@ -227,7 +237,7 @@ class Cro::LDAP::Client {
                         simple => $password !!
                         sasl => SaslCredentials.new(|$password));
                 BindRequest.new(version => 3, :$name, :$authentication);
-            }, :@controls);
+            }, :$controls);
             $!BIND-LOCK.protect({
                 $new-bind-p.keep;
                 cas($!BIND-P, $new-bind-p, Any);
@@ -235,7 +245,7 @@ class Cro::LDAP::Client {
             $resp;
         } else {
             await $bind-promise;
-            self.bind(:$name, :$password, :@controls);
+            self.bind(:$name, :$password, :$controls);
         }
     }
 
@@ -245,20 +255,27 @@ class Cro::LDAP::Client {
         }
     }
 
-    method unbind(:@controls) {
+    method unbind(:control(:$controls) is copy) {
         die X::Cro::LDAP::Client::NotConnected.new(:op<unbind>) unless self;
         self!queue-after-bind;
 
         # Remove critical status from unbind controls
-        @controls .= map( -> $c {
-            if $c ~~ Associative { $c<critical>:delete; $c } elsif $c ~~ Control { $c.criticality = False; $c } else { $c }
-        });
-        self!wrap-request({ UnbindRequest.new }, :@controls);
+        with $controls {
+            $_ = .map( -> $c {
+                if $c ~~ Associative {
+                    $c<critical>:delete;
+                } elsif $c ~~ Control {
+                    $c.criticality = False;
+                }
+                $c;
+            }).List;
+        }
+        self!wrap-request({ UnbindRequest.new }, :$controls);
         $!pipeline.close;
         $!pipeline = Nil;
     }
 
-    method add($dn, :@attrs, :@controls) {
+    method add($dn, :@attrs, :control(:$controls)) {
         die X::Cro::LDAP::Client::NotConnected.new(:op<add>) unless self;
         die X::Cro::LDAP::Client::EmptyAttributeList.new(:$dn) if @attrs.elems < 1;
         self!queue-after-bind;
@@ -272,32 +289,32 @@ class Cro::LDAP::Client {
             }
             AddRequest.new(entry => $dn,
                     attributes => ASNSequenceOf[AttributeListBottom].new(seq => @attributes));
-        }, :@controls);
+        }, :$controls);
     }
 
-    method delete($dn, :@controls) {
+    method delete($dn, :control(:$controls)) {
         die X::Cro::LDAP::Client::NotConnected.new(:op<delete>) unless self;
         self!queue-after-bind;
 
-        self!wrap-request({ DelRequest.new($dn) }, :@controls);
+        self!wrap-request({ DelRequest.new($dn) }, :$controls);
     }
 
-    method compare(Str $entry, Str $attribute-desc, Str $assertion-value, :@controls) {
+    method compare(Str $entry, Str $attribute-desc, Str $assertion-value, :control($controls)) {
         die X::Cro::LDAP::Client::NotConnected.new(:op<compare>) unless self;
         self!queue-after-bind;
 
         self!wrap-request({
             my $ava = AttributeValueAssertion.new(:$attribute-desc, :$assertion-value);
             CompareRequest.new(:$entry, :$ava);
-        }, :@controls);
+        }, :$controls);
     }
 
     my %MODS = add => add, replace => replace, delete => delete;
 
-    multi method modify($object, *%changes, :@controls) {
-        self.modify($object, %changes.List, :@controls);
+    multi method modify($object, *%changes, :control(:$controls)) {
+        self.modify($object, %changes.List, :$controls);
     }
-    multi method modify($object, @changes, :@controls) {
+    multi method modify($object, @changes, :control(:$controls)) {
         die X::Cro::LDAP::Client::NotConnected.new(:op<modify>) unless self;
         self!queue-after-bind;
 
@@ -315,10 +332,10 @@ class Cro::LDAP::Client {
         self!wrap-request({
 
             ModifyRequest.new(:$object, :$modification)
-        }, :@controls);
+        }, :$controls);
     }
 
-    method modifyDN(:$dn!, :$new-dn!, :$delete = True, :$new-superior, :@controls) {
+    method modifyDN(:$dn!, :$new-dn!, :$delete = True, :$new-superior, :control(:$controls)) {
         die X::Cro::LDAP::Client::NotConnected.new(:op('modify DN')) unless self;
         self!queue-after-bind;
 
@@ -328,7 +345,7 @@ class Cro::LDAP::Client {
                     newrdn => $new-dn,
                     deleteoldrdn => $delete,
                     :$new-superior);
-        }, :@controls);
+        }, :$controls);
     }
 
     method search(Str :$dn!, Str :$filter is copy = '(objectclass=*)',
@@ -336,7 +353,7 @@ class Cro::LDAP::Client {
             DerefAliases :$deref-aliases = derefFindingBaseObj,
             Int :$size-limit = 0, Int :$time-limit = 0,
             Bool :$types-only = False,
-            :@attributes = [], :@controls) {
+            :@attributes = [], :control(:$controls)) {
         die X::Cro::LDAP::Client::NotConnected.new(:op<search>) unless self;
         self!queue-after-bind;
 
@@ -360,35 +377,55 @@ class Cro::LDAP::Client {
                     base-object => $dn, :$scope, :$deref-aliases,
                     :$size-limit, :$time-limit, :$types-only, :$attributes,
                     filter => $filter-object);
-        }, :@controls);
+        }, :$controls);
     }
     method !check-attribute-syntax($attribute) {
         $attribute eq '*'|'1.1' or Attributes.parse($attribute, :rule<attributeDescription>);
     }
 
-    method abandon($id, :@controls) {
+    method abandon($id, :control(:$controls)) {
         self!queue-after-bind;
-        self!wrap-request({ AbandonRequest.new($id) }, :@controls);
+        self!wrap-request({ AbandonRequest.new($id) }, :$controls);
     }
 
-    method root-DSE(*@custom-attrs) {
+    method root-DSE(*@custom-attrs --> Promise) {
         my @attributes = <altServer namingContexts supportedControl
                     supportedExtension supportedFeatures supportedLDAPVersion
                     supportedSASLMechanisms subschemaSubentry>;
         @attributes.push: $_ for @custom-attrs;
 
-        my $entry = await self.search(:dn(''), :filter<(objectclass=*)>, :@attributes);
-        Cro::LDAP::RootDSE.new($entry.attributes);
+        Promise(supply {
+            my %attrs;
+            whenever self.search(:dn(''), :filter<(objectclass=*)>, :@attributes) {
+                when Cro::LDAP::Entry {
+                    %attrs.push: .attributes;
+                }
+                when Cro::LDAP::Search::Done {
+                    emit Cro::LDAP::RootDSE.new(%attrs);
+                    done;
+                }
+            }
+        });
     }
 
-    method schema(Str $dn?) {
+    method schema(Str $dn? --> Promise) {
         my $base = $dn // self.root-DSE()<subschemaSubentry> // 'cn=schema';
         my @attributes = <objectClasses attributeTypes matchingRules matchingRuleUse
                  dITStructureRules dITContentRules nameForms
                  ldapSyntaxes extendedAttributeInfo>;
-        my $entry = await self.search(:dn($base), scope => baseObject,
-                                      filter => '(objectClass=subschema)', :@attributes);
-        Cro::LDAP::Schema.new($entry.attributes);
+        Promise(supply {
+            my %attrs;
+            whenever self.search(:dn($base), scope => baseObject,
+                                 filter => '(objectClass=subschema)', :@attributes) {
+                when Cro::LDAP::Entry {
+                    %attrs.push: .attributes;
+                }
+                when Cro::LDAP::Search::Done {
+                    emit Cro::LDAP::Schema.new(%attrs);
+                    done;
+                }
+            }
+        })
     }
 
     multi method extend(Cro::LDAP::Extension $op) {
@@ -454,13 +491,13 @@ class Cro::LDAP::Client {
         }
     }
 
-    method !wrap-request(&make-message, :@controls) {
+    method !wrap-request(&make-message, :$controls) {
         my $message = make-message;
-        $!pipeline.send-request(self!wrap-with-envelope($message, :@controls));
+        $!pipeline.send-request(self!wrap-with-envelope($message, :$controls));
     }
 
-    method !wrap-with-envelope($request, :controls(@raw-controls)) {
-        my $controls = self!process-controls(@raw-controls);
+    method !wrap-with-envelope($request, :controls($raw-controls)) {
+        my $controls = self!process-controls($raw-controls);
         my $message-id = $!message-counter⚛++;
         my $choice = $request.^name.subst(/(\w)/, *.lc, :1st);
         $choice = 'modDNRequest' if $request ~~ ModifyDNRequest;
@@ -468,11 +505,11 @@ class Cro::LDAP::Client {
         Cro::LDAP::Message.new(:$message-id, protocol-op => ProtocolOp.new(($choice => $request)), :$controls);
     }
 
-    method !process-controls(@raw-controls) {
+    method !process-controls($raw-controls) {
         my @seq;
-        for @raw-controls {
-            when Control {
-                @seq.push: $_;
+        for $raw-controls<> // [] {
+            when Cro::LDAP::Control {
+                @seq.push: .to-control;
             }
             when Associative {
                 my $control-type = self!check-control($_);

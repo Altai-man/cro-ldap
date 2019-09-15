@@ -1,4 +1,5 @@
 use Cro::LDAP::Types;
+use Cro::LDAP::Control;
 
 role Cro::LDAP::Worker {
     method bind($req, :@controls --> BindResponse) {...}
@@ -13,8 +14,7 @@ role Cro::LDAP::Worker {
 
     method accept(Cro::LDAP::Message $request) {
         my $op = $request.protocol-op.ASN-value;
-        my @controls;
-        @controls = .seq<> with $request.controls<>;
+        my @controls = $request.controls.seq.map({ self!process-controls($_) });
         given $op.value {
             when BindRequest {
                 my $resp = self.bind($request, :@controls);
@@ -70,5 +70,9 @@ role Cro::LDAP::Worker {
                 die "Not yet implemented message is sent: $op.key()";
             }
         }
+    }
+    method !process-controls($control) {
+        my $type = %KNOWN-CONTROLS{$control.control-type.decode};
+        return $type ~~ Control ?? $type.new($control) !! $control;
     }
 }

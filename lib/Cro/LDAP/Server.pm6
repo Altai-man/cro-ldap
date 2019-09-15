@@ -27,9 +27,14 @@ class Cro::LDAP::Server does Cro::Service {
 
                     if $resp ~~ Supply {
                         whenever $resp {
-                            emit Cro::LDAP::Message.new(
-                                    message-id => $request.message-id,
-                                    protocol-op => ProtocolOp.new($_));
+                            when Cro::LDAP::Message {
+                                emit $_;
+                            }
+                            default {
+                                emit Cro::LDAP::Message.new(
+                                        message-id => $request.message-id,
+                                        protocol-op => ProtocolOp.new($_));
+                            }
                         }
                     } else {
                         emit Cro::LDAP::Message.new(
@@ -56,6 +61,5 @@ class Cro::LDAP::Server does Cro::Service {
                 Cro::LDAP::MessageParser,
                 $transformer,
                 Cro::LDAP::MessageSerializer);
-
     }
 }

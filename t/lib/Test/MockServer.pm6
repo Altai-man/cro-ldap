@@ -1,4 +1,5 @@
 use ASN::Types;
+use Cro::LDAP::Control;
 use Cro::LDAP::Types;
 use Cro::LDAP::Worker;
 
@@ -38,7 +39,7 @@ class MockLDAPWorker does Cro::LDAP::Worker {
         # Special test data can be obtained with controls passed
         with @controls {
             for @controls -> $control {
-                if $control.control-type.decode eq "1.3.6.1.1.22" && $control.criticality {
+                if $control.control-type eq "1.3.6.1.1.22" && $control.criticality {
                     return AddResponse.new(
                             result-code => compareFalse,
                             matched-dn => $req.entry.decode.comb.reverse.join,
@@ -101,6 +102,22 @@ class MockLDAPWorker does Cro::LDAP::Worker {
     method search(Cro::LDAP::Message $message, :@controls) {
         my $req = $message.protocol-op.ASN-value.value;
         supply {
+            if $req.base-object.decode eq "test=paged" {
+                with $message.controls.seq.first(*.control-type.decode eq '1.2.840.113556.1.4.319') {
+                    my $cookie = '';
+                    if $_.control-value[*-1] == 0 {
+                        $cookie = 'hello';
+                        emit (searchResRef => SearchResultReference.new(
+                                seq => ["ldap://hostb/OU=People,DC=Example,DC=NET??sub"]));
+                    }
+                    emit Cro::LDAP::Message.new(
+                            message-id => $message.message-id,
+                            protocol-op => ProtocolOp.new((searchResDone => SearchResultDone.new(result-code => success, matched-dn => "", error-message => ""))),
+                            controls => ASNSequenceOf[Control].new(seq => [Cro::LDAP::Control::Paged.new(:1size, :$cookie).to-control()]));
+                    done;
+                }
+            }
+
             if $req.base-object.elems == 0 {
                 emit (searchResEntry => SearchResultEntry.new(object-name => "",
                     attributes => ASNSequenceOf[PartialAttributeListBottom].new(seq => [

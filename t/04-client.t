@@ -158,9 +158,11 @@ subtest {
     ok $single-resp ~~ Supply, "Search operation returns a Supply";
     react {
         whenever $single-resp -> $entry {
-            is $entry.dn, "foo", "DN is preserved";
-            is-deeply $entry<first>.map(*.decode).sort, <Epsilon Solution>.sort, "First attr is preserved";
-            is-deeply $entry<second>.map(*.decode).sort, <Gamma Narberal>.sort, "Second attr is preserved";
+            when Cro::LDAP::Entry {
+                is $entry.dn, "foo", "DN is preserved";
+                is-deeply $entry<first>.map(*.decode).sort, <Epsilon Solution>.sort, "First attr is preserved";
+                is-deeply $entry<second>.map(*.decode).sort, <Gamma Narberal>.sort, "Second attr is preserved";
+            }
 
             LAST {
                 pass "Closed the supply";
@@ -270,18 +272,18 @@ subtest {
 
 # ROOT DSE
 subtest {
-    my $root = $client.root-DSE;
+    my $root = await $client.root-DSE;
     ok $root ~~ Cro::LDAP::RootDSE, "Got Cro::LDAP::RootDSE object";
     ok $root.extensions('1.3.6.1.4.1.4203.1.11.1'), "Has necessary extension by method";
     ok $root<supportedExtension>.decode eq '1.3.6.1.4.1.4203.1.11.1', "Has necessary extension by hash indexing";
 
-    $root = $client.root-DSE('customAttr1', 'customAttr2');
+    $root = await $client.root-DSE('customAttr1', 'customAttr2');
     is $root<customAttr1>.decode, 'foo', "Has customAttr1";
     is $root<customAttr2>.decode, 'bar', "Has customAttr2";
 }, "Root DSE";
 
 subtest {
-    my $schema = $client.schema;
+    my $schema = await $client.schema;
     ok $schema ~~ Cro::LDAP::Schema, 'Got Cro::LDAP::Shema object';
 }, "Schema";
 
