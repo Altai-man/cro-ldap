@@ -425,8 +425,8 @@ supportedSASLMechanisms
 subschemaSubentry
 ```
 
-The method returns a `Cro::LDAP::RootDSE` object that contain requested
-attributes.
+The method returns a `Promise` instance which is kept with a `Cro::LDAP::RootDSE` object,
+that contains requested attributes.
 
 ```perl6
 my $root = await $client.root-DSE('customAttribute1', 'customAttribute2');
@@ -439,12 +439,12 @@ say $root.supported-version;
 ### Server Schema
 
 To get the server's schema information a method called `schema` can be
-used. A DN to use can be passed as a `Str` object argument. An object of
-class `Cro::LDAP::Schema` is returned.
+used. A DN to use can be passed as a `Str` object argument. A `Promise` is returned
+ which is resolved into an object of type `Cro::LDAP::Schema`.
 
 ```perl6
-my $schema = $client.schema;
-$schema = $client.schema($DN);
+my $schema = await $client.schema;
+$schema = await $client.schema($DN);
 ```
 
 ### Controls
@@ -452,43 +452,88 @@ $schema = $client.schema($DN);
 Almost all methods that implement operations support sending additional
 control values to the server.
 
+Control is a special addition to a message sent to the server or returned
+from it. It can alter behavior of the server or allow for the server
+to convey additional information.
+
 To add a control to an operation, additional named argument `control` is
-passed. Its value can be an `Cro::LDAP::Control` object or a `Hash`
+passed to a method corresponding to the operation.
+Its value can be either an `Cro::LDAP::Control` object or a `Hash`
 instance with up to three pairs included:
 
 * `type` - a `Str` value for control's type. Passing a value that does not
   conform to OID syntax causes an exception of type `X::Cro::LDAP::Client::IncorrectOID`
-  to be thrown.
-* `critical` - a `Bool` value indicating if a control is critical (its default
-  value - `False`)
-* `value` - a `Str` value for control's value, absent by default
+  to be thrown
+* `critical` - a `Bool` value indicating if a control is critical, `False` by default
+* `value` - a `Buf` value for control's value, absent by default
 
-It allows for expressing any control that can be send to a server. For
-some commonly used controls predefined classes are provided, see
+It allows expressing of any control that can be sent to a server. For
+some commonly used control types predefined classes are provided, see
 `Cro::LDAP::Control` page for a full list.
 
 ```perl6
 my $control = Cro::LDAP::Control::DontUseCopy;
 
 # Pass two controls
-# Use a predefined type object or a Hash-described equivalent
+# Use a predefined type object and a Hash-described equivalent
 $client.compare("uid=bjensen,ou=people,dc=example,dc=com", "sn", "Doe",
                 controls => [
                     $control,
-                    { type => "1.3.6.1.1.22", :critical },]);
+                    { type => "1.3.6.1.1.22", :critical } ]);
 # Pass a single control
 $client.compare("uid=bjensen,ou=people,dc=example,dc=com", "sn", "Doe",
                 controls => $control);
 ```
 
-Response messages can carry controls too and
-they are exposed for every response message
-as `@.controls` attribute:
+Response messages can carry controls as well as requests and
+they are exposed for every response message as `@.controls` attribute:
 
-```
+```perl6
 my $compare-resp = await $client.compare("uid=bjensen,ou=people,dc=example,dc=com", "sn", "Doe");
 note $compare-resp.controls;
 ```
+
+By default, returned server controls can be recognized by Cro::LDAP::Client
+or not. If they are recognized, they are converted into an instance of
+`Cro::LDAP::Control` role and possibly can be re-used:
+
+```perl6
+my $control = Cro::LDAP::Control::Paged.new(:500size);
+
+{
+    my $dn = "test=paged";
+    my $filter = "cn=root";
+    loop {
+        # make a search request
+        my $search = $client.search(:$dn, :$filter, :$control);
+        react {
+            # process all values from the search supply
+            whenever $search {
+                when Cro::LDAP::Entry { #`( process an entry ) }
+                when Cro::LDAP::Search::Done {
+                    # when this batch is done, find a control of type...
+                    my $paged = .controls.first(Cro::LDAP::Control::Paged);
+                    # without a control, end the processing
+                    last without $paged;
+                    # re-use the response cookie for a new request, if any
+                    $control.cookie = $paged.cookie;
+                }
+                QUIT {
+                    # an error has happened, we don't want to search for more
+                    $client.search(:$dn, :$filter, control => Cro::LDAP::Control::Paged.new(:0size, :cookie($control.cookie)));
+                    # process the error
+                }
+            }
+        }
+        last unless $control.cookie.elems;
+    }
+}
+```
+
+For unrecognized server-side controls, a Hash of the format specified above
+is returned. A callback for parsing the hash can be passed using `:&make-control` named
+parameter. When passed, it will be called for every unrecognized
+control in the response.
 
 ### Extensions
 
