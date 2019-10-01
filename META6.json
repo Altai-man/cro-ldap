@@ -10,7 +10,7 @@
   "depends": [
     "Cro::Core",
     "ASN::BER",
-    "ASN::META:ver<0.5.1+>",
+    "ASN::META:ver<0.5.2+>",
     "OO::Monitors",
     "Text::LDIF",
     "IO::Socket::Async::SSL",
