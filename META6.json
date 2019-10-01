@@ -1,7 +1,7 @@
 {
   "name": "Cro::LDAP",
   "description": "LDAPv3 support",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "perl": "6.c",
   "authors": [
     "Alexander Kiryuhin <alexander.kiryuhin@gmail.com>"
@@ -10,7 +10,7 @@
   "depends": [
     "Cro::Core",
     "ASN::BER",
-    "ASN::META",
+    "ASN::META:ver<0.5.1+>",
     "OO::Monitors",
     "Text::LDIF",
     "IO::Socket::Async::SSL",
@@ -38,7 +38,9 @@
     "Cro::LDAP::URL": "lib/Cro/LDAP/URL.pm6",
     "Cro::LDAP::Worker": "lib/Cro/LDAP/Worker.pm6"
   },
-  "resources": [],
+  "resources": [
+    "ldap.asn"
+  ],
   "license": "Artistic-2.0",
   "tags": [
     "LDAP",

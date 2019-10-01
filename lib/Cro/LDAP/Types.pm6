@@ -1,6 +1,6 @@
 use Cro;
 use ASN::Types;
-use ASN::META <file docs/ldap.asn>;
+use ASN::META BEGIN { 'file', slurp %?RESOURCES<ldap.asn> };
 
 class Cro::LDAP::Search::Done {}
 
