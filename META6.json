@@ -1,7 +1,7 @@
 {
   "name": "Cro::LDAP",
   "description": "LDAPv3 support",
-  "version": "0.5.3",
+  "version": "0.5.3.1",
   "perl": "6.c",
   "authors": [
     "Alexander Kiryuhin <alexander.kiryuhin@gmail.com>"
