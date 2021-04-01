@@ -6,7 +6,7 @@ to to the implementation details.
 
 ### Purpose
 
-We intend Cro::LDAP to be a quick tool for LDAPv3 support in Perl 6.
+We intend Cro::LDAP to be a quick tool for LDAPv3 support in Raku.
 
 Or, more officially, the `Cro::LDAP` module tries to fulfill a number of
 goals:
@@ -19,11 +19,11 @@ goals:
     slim, streamlined provider for communication with a LDAP server with
     little data transformations.
   * While API is similar to one in `Net::LDAP`, we aim to make
-    `Cro::LDAP` to use Perl 6 to its fullest and avoid blind copying
+    `Cro::LDAP` to use Raku to its fullest and avoid blind copying
     of the API where possible. Thus, things differ.
-* Provide a skeleton for writing a LDAP server in Perl 6. As Cro focuses
+* Provide a skeleton for writing a LDAP server in Raku. As Cro focuses
   on _serving the data_, not _processing it_, we do not intend to implement
-  a Directory Service provider in Perl 6. However, if one desires to
+  a Directory Service provider in Raku. However, if one desires to
   write a server part with some specific purpose in mind, tying the
   backend is up to the implementor - and `Cro::LDAP` will serve the
   data.
