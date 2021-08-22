@@ -1,7 +1,7 @@
 {
   "name": "Cro::LDAP",
   "description": "LDAPv3 support",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "perl": "6.c",
   "authors": [
     "Alexander Kiryuhin <alexander.kiryuhin@gmail.com>"
@@ -9,8 +9,8 @@
   "auth": "github:Altai-man",
   "depends": [
     "Cro::Core",
-    "ASN::BER",
-    "ASN::META:ver<0.5.2+>",
+    "ASN::BER:ver<0.7.3+>",
+    "ASN::META:ver<0.5.3+>",
     "OO::Monitors",
     "Text::LDIF",
     "IO::Socket::Async::SSL",
