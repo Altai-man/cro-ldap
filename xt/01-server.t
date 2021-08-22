@@ -42,8 +42,6 @@ my Cro::Service $server = Cro::LDAP::Server.new(
 $server.start;
 END $server.stop;
 
-my @args = <-H ldap://localhost:2000/ -x -D "cn=manager,o=it,c=eu" -w secret>;
-
 test-command("ldapadd",
         args => <-f xt/input-files/add.ldif>,
         checks => [* ~~ /'adding new entry "uid=jsmith,ou=people,dc=example,dc=com'/]);

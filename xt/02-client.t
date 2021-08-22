@@ -10,7 +10,12 @@ use Test;
 
 my Cro::LDAP::Client $ldap = await Cro::LDAP::Client.connect("ldap://ldaps.test.local");
 
-my $bind-resp = $ldap.bind(name => "uid=cro,ou=people,dc=test,dc=local", password => "pcro");
+my $bind-resp = $ldap.bind(name => "uid=cro,ou=people,dc=test,dc=local", password => "pcro1");
+
+is $bind-resp.result-code, invalidCredentials, 'Got proper response of invalidCredentials';
+
+$bind-resp = $ldap.bind(name => "uid=cro,ou=people,dc=test,dc=local", password => "pcro");
+
 is $bind-resp.result-code, success, 'Could bind';
 
 my $search-resp = $ldap.search(:dn<ou=people,dc=test,dc=local>, :filter<objectclass=*>);
@@ -19,7 +24,8 @@ my $closed-p = Promise.new;
 
 react {
     whenever $search-resp -> $entry {
-        is $entry.dn, 'ou=people,dc=test,dc=local'|'uid=cro,ou=people,dc=test,dc=local', 'Correct DN';
+        next if $entry ~~ Cro::LDAP::Search::Done;
+        is $entry.dn, 'ou=people,dc=test,dc=local' | 'uid=cro,ou=people,dc=test,dc=local', 'Correct DN';
         for $entry.attributes.kv -> $k, $v {
             my $value-str = $v ~~ Blob ?? $v.decode !! $v.map(*.decode);
             if $k eq 'uid' {
@@ -46,9 +52,7 @@ is $bind-resp.result-code, success, 'Could re-bind';
 my @entries = Cro::LDAP::Entry.parse(slurp 'xt/input-files/cro-add.ldif');
 
 for @entries -> $entry {
-    note $entry;
-    my $res = await $ldap.sync($entry);
-    note $res;
+   await $ldap.sync($entry);
 }
 
 my $modDN-resp = await $ldap.modifyDN(:dn<uid=test,ou=people,dc=test,dc=local>, new-dn => "uid=tester");
